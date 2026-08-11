@@ -538,6 +538,10 @@ function renderMap(rows) {
   for (const r of rows) {
     let lat = r.lat, lon = r.lon;
     if (lat == null || lon == null) continue; // sin coordenadas exactas -> no se dibuja en el mapa
+    // Separar puntos que caen casi en el mismo lugar (evita que se monten unos sobre otros)
+    const gkey = lat.toFixed(4) + "," + lon.toFixed(4);
+    const idx = seen[gkey] || 0; seen[gkey] = idx + 1;
+    if (idx > 0) { const ang = idx * 1.7, rad = 0.0003 * (1 + Math.floor(idx / 6)); lat += Math.sin(ang) * rad; lon += Math.cos(ang) * rad; }
     const color = ESTADO_COLOR[r.estado] || "#16b3b3";
     const size = 15; // todos los puntos calientes del mismo tamaño (pequeños, evitan encimarse)
     const icon = L.divIcon({
