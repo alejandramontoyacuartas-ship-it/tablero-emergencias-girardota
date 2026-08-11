@@ -68,7 +68,7 @@ const ESTADOS = ["Reportado", "En atención", "Inspeccionado", "Crítico", "Aten
 const ESTADO_COLOR = { "Reportado": "#3aa0ff", "En atención": "#ffd21e", "Inspeccionado": "#ff8a3a", "Crítico": "#e5484d", "Atendido": "#35c46b" };
 const ESTADO_BADGE = { "Reportado": "b-reportado", "En atención": "b-atencion", "Inspeccionado": "b-inspeccionado", "Crítico": "b-critico", "Atendido": "b-atendido" };
 // Etiqueta visible de cada estado (el valor interno se mantiene por compatibilidad)
-const ESTADO_LABEL = { "Reportado": "Reportado", "En atención": "En atención", "Inspeccionado": "Con afectaciones - valoración detallada", "Crítico": "Crítico", "Atendido": "Atendido" };
+const ESTADO_LABEL = { "Reportado": "Reportado", "En atención": "En atención", "Inspeccionado": "Con afectaciones - Monitoreo", "Crítico": "Crítico", "Atendido": "Atendido" };
 function estadoLabel(e) { return ESTADO_LABEL[e] || e; }
 const PRIOR_COLOR = { "Alta": "#e5484d", "Media": "#f5a623", "Baja": "#35c46b" };
 const OPER_COLOR = { "Operativa": "#35c46b", "Parcialmente operativa": "#f5a623", "No operativa": "#e5484d" };
@@ -763,7 +763,7 @@ function renderNecesidades() {
 
   destroyCharts();
   el("colLeft").innerHTML = card("Necesidades por tipo", "nGtipo") + card("Estado de gestión", "nGest", true) + card("Prioridad", "nGpri", true);
-  el("colRight").innerHTML = card("Necesidades por ubicación", "nGubic") + card("Con afectaciones (valoración detallada)", "nGben") + card("Por responsable", "nGresp");
+  el("colRight").innerHTML = card("Necesidades por ubicación", "nGubic") + card("Con afectaciones - Monitoreo", "nGben") + card("Por responsable", "nGresp");
   barH("nGtipo", topN(countBy(rows, "tipo"), 8), "#16b3b3");
   doughnut("nGest", countBy(rows, "estado"), NEC_ESTADO_COLOR);
   doughnut("nGpri", countBy(rows, "prioridad"), PRIOR_COLOR);
