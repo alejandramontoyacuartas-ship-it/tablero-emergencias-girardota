@@ -1,0 +1,389 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tablero de Emergencias — Girardota | Sismo 10 de agosto</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0c1a14; --panel:#122019; --panel2:#16281f; --border:#26382e;
+    --text:#eaf2ec; --muted:#9fb4a7; --accent:#8CC63F;
+    --green:#106853; --green2:#14876A; --lime:#8CC63F;
+    --rep:#3aa0ff; --aten:#ffd21e; --insp:#ff8a3a; --crit:#e5484d; --hecho:#35c46b;
+    --alta:#e5484d; --media:#f5a623; --baja:#8CC63F;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:13px}
+  a{color:var(--accent)}
+
+  /* ---------- Top bar ---------- */
+  .topbar{display:flex;align-items:center;gap:14px;padding:8px 16px;background:linear-gradient(100deg,#0d5a47,#106853 55%,#0c1a14);border-bottom:3px solid var(--lime);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;min-width:280px}
+  .brand img.logo{height:54px;width:auto;display:block}
+  .brand h1{font-size:15px;margin:0;font-weight:700;line-height:1.18;color:#fff}
+  .brand h1 .cm{display:block;color:var(--lime);font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase}
+  .brand h1 small{display:block;color:#d8ecd8;font-weight:500;font-size:11px}
+  .filters{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-left:auto}
+  .f{display:flex;flex-direction:column;gap:2px}
+  .f label{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  select,input,textarea,button{font-family:inherit;font-size:12px}
+  .filters select,.filters input{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:5px 7px;min-width:120px}
+  .btn{background:var(--accent);color:#04222b;border:none;border-radius:6px;padding:8px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border);font-weight:600}
+  .btn.ghost:hover{color:var(--text);border-color:var(--accent)}
+  .btn.close{background:var(--hecho);color:#062615}
+  .btn.sm{padding:4px 9px;font-size:11px;border-radius:5px}
+  .btn.att{background:var(--insp);color:#04202b}
+  .wl-actions{display:flex;gap:5px;white-space:nowrap}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;gap:2px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto}
+  .tab{background:transparent;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:11px 16px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+  main{padding:12px}
+
+  /* ---------- KPI strip ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+  .kpi .ic{font-size:26px;line-height:1}
+  .kpi .num{font-size:30px;font-weight:800;line-height:1}
+  .kpi .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
+  .kpi.rep::after{background:var(--rep)} .kpi.aten::after{background:var(--aten)}
+  .kpi.insp::after{background:var(--insp)} .kpi.crit::after{background:var(--crit)} .kpi.hecho::after{background:var(--hecho)}
+  .kpi.total::after{background:var(--aten);width:5px} .kpi.total{background:linear-gradient(90deg,#16281d,#122019);border-color:#2f5a34}
+  .kpi.total .num{font-size:34px} .kpi.total .ic{font-size:30px}
+  .kpi.click{cursor:pointer;transition:transform .08s,box-shadow .12s,border-color .12s;user-select:none}
+  .kpi.click:hover{transform:translateY(-1px);border-color:var(--lime)}
+  .kpi.active{border-color:var(--lime);box-shadow:0 0 0 2px var(--lime) inset}
+  .kpi.active .lab::after{content:" ✓";color:var(--lime)}
+
+  /* ---------- Grid ---------- */
+  .grid{display:grid;grid-template-columns:300px 1fr 300px;gap:12px}
+  @media(max-width:1200px){.grid{grid-template-columns:1fr 1fr}#mapcol{grid-column:1/-1;order:-1}}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .card h3{margin:0 0 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .chartbox{position:relative;height:170px}
+  .chartbox.sm{height:140px}
+
+  #map{height:100%;min-height:480px;border-radius:8px}
+  #mapcol .card{height:100%;display:flex;flex-direction:column}
+  #mapcol .chartbox{flex:1;height:auto}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted)}
+  /* Leyenda dentro del mapa */
+  .map-legend{background:rgba(14,26,20,.92);border:1px solid var(--border);border-radius:9px;padding:8px 11px;color:var(--text);font-size:11px;line-height:1.5;max-width:190px;box-shadow:0 2px 10px #0006}
+  .map-legend .lg-title{font-weight:800;color:var(--lime);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px;margin-bottom:3px}
+  .map-legend .lg-sec{color:var(--muted);text-transform:uppercase;font-size:9px;letter-spacing:.05em;margin:6px 0 2px}
+  .map-legend .lg-row{display:flex;align-items:center;gap:7px}
+  .map-legend .lg-dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .map-legend .lg-line{width:18px;height:3px;border-radius:2px;flex:none}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;filter:saturate(1.2) brightness(1.05)}
+  /* Punto tipo mapa de calor */
+  .leaflet-div-icon.heatpt{background:transparent;border:none;box-shadow:none}
+  .heatpt b{display:block;width:100%;height:100%;border-radius:50%;
+    background:radial-gradient(circle, var(--c) 0%, var(--c) 22%, transparent 72%);
+    box-shadow:0 0 10px 2px var(--c), 0 0 4px 1px var(--c)}
+
+  /* ---------- Table ---------- */
+  .table-wrap{margin-top:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .table-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .table-head h3{margin:0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .table-scroll{overflow:auto;max-height:340px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;z-index:1}
+  tbody tr:hover{background:#1c2c3a}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700}
+  .b-reportado{background:#0f2b45;color:#8cc6ff} .b-atencion{background:#3a3410;color:#ffe680}
+  .b-inspeccionado{background:#3a2410;color:#ffb37a} .b-critico{background:#3a1416;color:#ff9a9d}
+  .b-atendido{background:#0f2f1e;color:#7fe0a6}
+  .p-alta{color:var(--alta);font-weight:700} .p-media{color:var(--media);font-weight:700} .p-baja{color:var(--baja);font-weight:700}
+  .row-act{color:var(--muted);cursor:pointer;font-weight:700}
+  .row-act:hover{color:var(--rep)}
+  .empty{padding:30px;text-align:center;color:var(--muted)}
+
+  /* ---------- Modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:#000a;display:none;align-items:flex-start;justify-content:center;z-index:2000;overflow:auto;padding:30px 12px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:640px;padding:18px 20px}
+  .modal h2{margin:0 0 4px;font-size:17px}
+  .modal .sub{color:var(--muted);margin:0 0 14px;font-size:12px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+  .form-grid .full{grid-column:1/-1}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld label{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  .fld input,.fld select,.fld textarea{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px}
+  .fld textarea{resize:vertical;min-height:60px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  .footer-note{color:var(--muted);font-size:11px;text-align:center;padding:14px}
+  .tag-demo{background:#3a2a10;color:#ffce7a;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px}
+  .grp-head{grid-column:1/-1;color:var(--accent);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+  .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .thumb{position:relative;width:72px;height:72px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb b{position:absolute;top:-1px;right:-1px;background:var(--rep);color:#fff;width:18px;height:18px;border-radius:0 0 0 6px;font-size:12px;line-height:18px;text-align:center;cursor:pointer}
+  .oper-si{color:var(--hecho);font-weight:700}.oper-no{color:var(--rep);font-weight:700}.oper-par{color:var(--aten);font-weight:700}
+  .popup-fotos{display:flex;gap:4px;margin-top:5px}.popup-fotos img{width:52px;height:52px;object-fit:cover;border-radius:4px}
+  /* Leaflet: control de capas y popups en tema oscuro */
+  .leaflet-control-layers{background:var(--panel2)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
+  .leaflet-control-layers-expanded{padding:8px 10px!important;font-size:12px}
+  .leaflet-control-layers label{margin:3px 0}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text)}
+  .leaflet-popup-content{font-size:12px;line-height:1.35}
+  .leaflet-popup-content b{color:var(--lime)}
+  /* Tarjeta SAT */
+  .sat{display:flex;flex-direction:column;gap:8px}
+  .sat .row{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px dashed var(--border);padding-bottom:6px}
+  .sat .row:last-child{border-bottom:none}
+  .sat .k{color:var(--muted);font-size:11px}
+  .sat .v{font-weight:700}
+  .sat-note{font-size:10.5px;color:var(--aten);background:#2a2410;border:1px solid #4a3d18;border-radius:6px;padding:6px 8px}
+  .lvl{display:flex;gap:3px;margin-top:4px}
+  .lvl span{flex:1;text-align:center;font-size:9px;font-weight:700;padding:3px 0;border-radius:3px;color:#08130e}
+  .info-src{grid-column:1/-1;font-size:10.5px;color:var(--muted);background:var(--panel);border:1px dashed var(--border);border-radius:8px;padding:8px 10px}
+</style>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="logo" src="logo_girardota_blanco.png" alt="Alcaldía de Girardota" />
+    <h1><span class="cm">Consejo Municipal de Gestión del Riesgo de Desastres · Girardota</span>
+      Tablero de atención de emergencias
+      <small>Sismo del 10 de agosto de 2026 · Datos operativos</small></h1>
+  </div>
+  <div class="filters">
+    <div class="f"><label>Zona</label>
+      <select id="fZona"><option value="">Todas</option><option>Urbano</option><option>Rural</option></select></div>
+    <div class="f"><label>Ubicación (vereda/barrio)</label>
+      <select id="fUbic"><option value="">Todas</option></select></div>
+    <div class="f"><label>Estado</label>
+      <select id="fEstado"><option value="">Todos</option><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
+    <div class="f"><label>Prioridad</label>
+      <select id="fPrioridad"><option value="">Todas</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+    <div class="f"><label>Buscar</label>
+      <input id="fBuscar" type="text" placeholder="sitio, descripción…" /></div>
+    <button class="btn" id="btnFiltrar">🔍 Filtrar</button>
+    <button class="btn ghost" id="btnClear">Limpiar</button>
+    <button class="btn" id="btnNuevo">＋ Nuevo reporte</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="resumen">📊 Resumen general</button>
+  <button class="tab" data-tab="atencion">🛠️ Atención en campo</button>
+  <button class="tab" data-tab="educacion">🏫 Escuelas / Educación</button>
+  <button class="tab" data-tab="infraestructura">🏛️ Infraestructura pública</button>
+  <button class="tab" data-tab="afectaciones">⚠️ Reportes de afectaciones</button>
+  <button class="tab" data-tab="necesidades">🧰 Necesidades</button>
+</nav>
+
+<main>
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid">
+    <div class="col" id="colLeft"></div>
+    <div class="col" id="mapcol">
+      <div class="card">
+        <h3 id="mapTitle">Mapa de emergencias — Girardota</h3>
+        <div class="chartbox"><div id="map"></div></div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--rep)"></i>Reportado</span>
+          <span><i class="dot" style="background:var(--aten)"></i>En atención</span>
+          <span><i class="dot" style="background:var(--insp)"></i>Inspeccionado</span>
+          <span><i class="dot" style="background:var(--crit)"></i>Crítico</span>
+          <span><i class="dot" style="background:var(--hecho)"></i>Atendido</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" id="colRight"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <h3 id="tblTitle">Detalle de reportes</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" id="btnCSV">⬇ Exportar CSV</button>
+        <button class="btn ghost" id="btnDemo">🧹 Borrar todo</button>
+      </div>
+    </div>
+    <div class="table-scroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="footer-note">
+    <b>Alcaldía de Girardota</b> · Consejo Municipal de Gestión del Riesgo de Desastres (CMGRD) ·
+    girardota.gov.co · @alcaldiagirardota<br>
+    Reportes ingresados manualmente (localStorage). Capas de contexto extraídas del Geoportal de Gestión del Riesgo (SAT La Correa).
+    <span id="storeInfo"></span>
+  </div>
+</main>
+
+<!-- Modal nuevo/editar reporte -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="modalTitle">Nuevo reporte de emergencia</h2>
+    <p class="sub">Sismo del 10 de agosto de 2026 · Girardota (Antioquia)</p>
+    <form id="form">
+      <input type="hidden" id="fId" />
+      <div class="form-grid">
+        <div class="fld full" id="wrapLoadExisting"><label>¿Actualizar un reporte ya generado? (opcional)</label>
+          <select id="iLoadExisting"><option value="">— Crear reporte nuevo —</option></select></div>
+        <div class="fld"><label>Sector *</label>
+          <select id="iSector" required>
+            <option value="afectaciones">⚠️ Afectaciones generales</option>
+            <option value="educacion">🏫 Educación / Escuelas</option>
+            <option value="infraestructura">🏛️ Infraestructura pública</option>
+          </select></div>
+        <div class="fld"><label>Tipo de reporte *</label>
+          <select id="iTipo" required></select></div>
+        <div class="fld full"><label>Tipo de emergencia (evento recibido)</label>
+          <select id="iTipoEvento">
+            <option>Afectación por sismo</option>
+            <option>Colapso estructural</option>
+            <option>Movimiento en masa / deslizamiento</option>
+            <option>Avenida torrencial</option>
+            <option>Inundación</option>
+            <option>Afectación arbórea (caída de árbol)</option>
+            <option>Incendio</option>
+            <option>Fuga de gas / material peligroso</option>
+            <option>Daños en servicios públicos</option>
+            <option>Otro</option>
+          </select></div>
+
+        <!-- ===== Común: ubicación ===== -->
+        <div class="fld full"><label id="lblSitio">Sitio / institución / dirección *</label>
+          <input id="iSitio" required placeholder="Ej: I.E. Manuel José Sierra, sede principal" /></div>
+        <div class="fld"><label>Zona</label>
+          <select id="iZona"><option>Urbano</option><option>Rural</option></select></div>
+        <div class="fld"><label id="lblUbic">Vereda / barrio *</label>
+          <select id="iUbic" required></select></div>
+        <div class="fld" data-sectors="afectaciones"><label>Sector / comunidad</label>
+          <input id="iSectorLocal" placeholder="Ej: parte alta, la loma…" /></div>
+
+        <!-- ===== Educación ===== -->
+        <div class="grp-head" data-sectors="educacion">Datos de la institución educativa</div>
+        <div class="fld" data-sectors="educacion"><label>Institución Educativa</label>
+          <select id="iInstitucion"></select></div>
+        <div class="fld" data-sectors="educacion"><label>Sede / Escuela</label>
+          <select id="iSede"></select></div>
+        <div class="fld" data-sectors="educacion"><label>Carácter</label>
+          <select id="iCaracter"><option>Pública</option><option>Privada</option><option>Mixta</option></select></div>
+        <div class="fld" data-sectors="educacion"><label>Estudiantes afectados</label>
+          <input id="iEstudiantes" type="number" min="0" value="0" /></div>
+
+        <!-- ===== Infraestructura ===== -->
+        <div class="grp-head" data-sectors="infraestructura">Datos de la infraestructura pública</div>
+        <div class="fld" data-sectors="infraestructura"><label>Tipo de edificio</label>
+          <select id="iTipoEdificio">
+            <option>Administrativo</option><option>Educativo</option><option>Salud</option>
+            <option>Cultural / deportivo</option><option>Servicios públicos</option>
+            <option>Vía / puente</option><option>Seguridad</option><option>Otro</option></select></div>
+        <div class="fld" data-sectors="infraestructura"><label>Secretaría responsable</label>
+          <select id="iSecretaria">
+            <option value="">— Seleccionar —</option>
+            <option>Gestión del Riesgo</option><option>Infraestructura / Obras Públicas</option>
+            <option>Educación</option><option>Salud</option><option>Gobierno</option>
+            <option>Transporte y Tránsito</option><option>Planeación</option><option>Servicios Públicos</option>
+            <option>Medio Ambiente</option><option>Cultura y Deporte</option><option>Hacienda</option><option>Otra</option></select></div>
+
+        <!-- ===== Operatividad y estado estructural (educación + infraestructura) ===== -->
+        <div class="fld" data-sectors="educacion infraestructura"><label>¿Operativa?</label>
+          <select id="iOperativa"><option>Operativa</option><option>Parcialmente operativa</option><option>No operativa</option></select></div>
+        <div class="fld" data-sectors="educacion infraestructura"><label>Estado de la infraestructura</label>
+          <select id="iEstadoInfra"><option>Sin daño</option><option>Habitable</option><option>Uso restringido</option><option>Inhabitable</option><option>En evaluación</option></select></div>
+
+        <!-- ===== Afectaciones (viviendas) ===== -->
+        <div class="grp-head" data-sectors="afectaciones">Afectaciones</div>
+        <div class="fld" data-sectors="afectaciones"><label>Viviendas afectadas</label><input id="iVivAfect" type="number" min="0" value="0" /></div>
+        <div class="fld" data-sectors="afectaciones"><label>Viviendas evacuadas</label><input id="iVivEvac" type="number" min="0" value="0" /></div>
+
+        <!-- ===== Común: personas / atención ===== -->
+        <div class="grp-head">Atención y personas</div>
+        <div class="fld"><label>Estado de atención *</label>
+          <select id="iEstado"><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
+        <div class="fld"><label>Prioridad *</label>
+          <select id="iPrioridad"><option>Alta</option><option selected>Media</option><option>Baja</option></select></div>
+        <div class="fld"><label>¿Requiere visita técnica?</label>
+          <select id="iVisita"><option>Sí</option><option>No</option></select></div>
+        <div class="fld"><label>Personas afectadas</label><input id="iPersonas" type="number" min="0" value="0" /></div>
+        <div class="fld"><label>Heridos</label><input id="iHeridos" type="number" min="0" value="0" /></div>
+        <div class="fld"><label>¿Animales afectados?</label>
+          <select id="iAnimales"><option>Sin animales afectados</option><option>Con animales afectados</option></select></div>
+        <div class="fld"><label>N° de animales afectados</label><input id="iAnimalesNum" type="number" min="0" value="0" /></div>
+
+        <!-- ===== Atención en campo ===== -->
+        <div class="grp-head">Atención en campo</div>
+        <div class="fld"><label>Atendido por (equipo / persona)</label><input id="iAtendidoPor" placeholder="Ej: Comisión técnica CMGRD" /></div>
+        <div class="fld"><label>Fecha de atención</label><input id="iFechaAtencion" readonly placeholder="(al cerrar el reporte)" /></div>
+        <div class="fld full"><label>Observaciones de la atención (campo)</label><textarea id="iObsAtencion" placeholder="Hallazgos, acciones realizadas, recomendaciones…"></textarea></div>
+
+        <!-- ===== Común: contacto ===== -->
+        <div class="grp-head">Contacto y descripción</div>
+        <div class="fld"><label>Reportado por (nombre)</label><input id="iReportante" placeholder="Nombre / entidad" /></div>
+        <div class="fld"><label>Teléfono</label><input id="iTelefono" type="tel" placeholder="Ej: 300 000 0000" /></div>
+        <div class="fld full"><label>Afectaciones / descripción</label><textarea id="iDesc" placeholder="Detalle de la afectación…"></textarea></div>
+
+        <!-- ===== Común: coordenadas + fotos ===== -->
+        <div class="grp-head">Coordenadas (WGS84) y fotos</div>
+        <div class="fld full"><label>Latitud, Longitud — pega el par de Google Maps aquí</label>
+          <input id="iLat" type="text" inputmode="decimal" placeholder="6.375451, -75.446302  (o 6°22'31&quot;N)" /></div>
+        <div class="fld"><label>Longitud (si va aparte)</label>
+          <input id="iLon" type="text" inputmode="decimal" placeholder="-75.446302" /></div>
+        <div class="fld full"><label>Fotos (opcional)</label>
+          <input id="iFotos" type="file" accept="image/*" multiple capture="environment" />
+          <div class="thumbs" id="fotoPreview"></div></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="btnCancel">Cancelar</button>
+        <button type="button" class="btn close" id="btnCerrar">✅ Marcar atendido y cerrar</button>
+        <button type="submit" class="btn">Guardar reporte</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Nueva necesidad -->
+<div class="modal-bg" id="modalNecBg">
+  <div class="modal">
+    <h2 id="necTitle">Nueva necesidad</h2>
+    <p class="sub">Identificación de necesidades para la atención · CMGRD Girardota</p>
+    <form id="formNec">
+      <input type="hidden" id="nId" />
+      <div class="form-grid">
+        <div class="fld full"><label>Tipo de necesidad *</label>
+          <select id="nTipo" required></select></div>
+        <div class="fld"><label>Zona</label>
+          <select id="nZona"><option>Urbano</option><option>Rural</option></select></div>
+        <div class="fld"><label>Ubicación (vereda/barrio)</label>
+          <select id="nUbic"></select></div>
+        <div class="fld full"><label>Detalle / lugar</label>
+          <input id="nSitio" placeholder="Ej: familias evacuadas edificio Carrera 9" /></div>
+        <div class="fld"><label>Cantidad</label><input id="nCantidad" type="number" min="0" value="0" /></div>
+        <div class="fld"><label>Unidad</label>
+          <select id="nUnidad"><option>familias</option><option>personas</option><option>kits</option><option>mercados</option><option>colchonetas</option><option>unidades</option><option>m³</option><option>viviendas</option><option>otro</option></select></div>
+        <div class="fld"><label>Personas beneficiadas</label><input id="nPersonas" type="number" min="0" value="0" /></div>
+        <div class="fld"><label>Prioridad</label>
+          <select id="nPrioridad"><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+        <div class="fld"><label>Estado de gestión *</label>
+          <select id="nEstado"><option>Identificada</option><option>En gestión</option><option>Cubierta</option></select></div>
+        <div class="fld"><label>Responsable</label>
+          <select id="nResponsable"><option value="">— Seleccionar —</option><option>Gestión del Riesgo</option><option>Gobierno</option><option>Salud</option><option>Infraestructura / Obras Públicas</option><option>Educación</option><option>Bienestar / Social</option><option>Servicios Públicos</option><option>Bomberos</option><option>Cruz Roja / Defensa Civil</option><option>Departamento / DAPARD</option><option>Otra</option></select></div>
+        <div class="fld full"><label>Observaciones</label><textarea id="nObs" placeholder="Detalle de la necesidad, gestión realizada…"></textarea></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="btnNecCancel">Cancelar</button>
+        <button type="submit" class="btn">Guardar necesidad</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="geodata.js"></script>
+<script src="geoportal.js"></script>
+<script src="reportes_iniciales.js"></script>
+<script src="app.js"></script>
