@@ -67,6 +67,9 @@ const EDU_IE = {
 const ESTADOS = ["Reportado", "En atención", "Inspeccionado", "Crítico", "Atendido"];
 const ESTADO_COLOR = { "Reportado": "#3aa0ff", "En atención": "#ffd21e", "Inspeccionado": "#ff8a3a", "Crítico": "#e5484d", "Atendido": "#35c46b" };
 const ESTADO_BADGE = { "Reportado": "b-reportado", "En atención": "b-atencion", "Inspeccionado": "b-inspeccionado", "Crítico": "b-critico", "Atendido": "b-atendido" };
+// Etiqueta visible de cada estado (el valor interno se mantiene por compatibilidad)
+const ESTADO_LABEL = { "Reportado": "Reportado", "En atención": "En atención", "Inspeccionado": "Con afectaciones - valoración detallada", "Crítico": "Crítico", "Atendido": "Atendido" };
+function estadoLabel(e) { return ESTADO_LABEL[e] || e; }
 const PRIOR_COLOR = { "Alta": "#e5484d", "Media": "#f5a623", "Baja": "#35c46b" };
 const OPER_COLOR = { "Operativa": "#35c46b", "Parcialmente operativa": "#f5a623", "No operativa": "#e5484d" };
 
@@ -244,7 +247,7 @@ function renderKPIs(rows) {
     { cls: "total", ic: "⚠️", num: n, lab: "Total reportado", est: "" },
     { cls: "rep", ic: "📍", num: pend, lab: "Para atención", est: "Reportado" },
     { cls: "aten", ic: "🛠️", num: aten, lab: "En atención", est: "En atención" },
-    { cls: "insp", ic: "🔎", num: insp, lab: "Inspeccionado", est: "Inspeccionado" },
+    { cls: "insp", ic: "🔎", num: insp, lab: "Con afectaciones", est: "Inspeccionado" },
     { cls: "crit", ic: "🔴", num: rows.filter(r => r.estado === "Crítico").length, lab: "Crítico", est: "Crítico" },
     { cls: "hecho", ic: "✅", num: hecho, lab: "Atendido", est: "Atendido" }
   ];
@@ -579,7 +582,7 @@ function operCell(v) {
   return `<span class="${cls}">${v}</span>`;
 }
 function fotoCell(r) { return r.fotos && r.fotos.length ? `📷 ${r.fotos.length}` : "—"; }
-function estadoCell(r) { return `<span class="badge ${ESTADO_BADGE[r.estado]}">${r.estado}</span>`; }
+function estadoCell(r) { return `<span class="badge ${ESTADO_BADGE[r.estado]}">${estadoLabel(r.estado)}</span>`; }
 function ubicCell(r) { return `${r.ubic}<br><span style="color:var(--muted);font-size:10px">${r.zona}</span>`; }
 function sitioCell(r) { return `${r.sitio}${r.demo ? '<span class="tag-demo">ej.</span>' : ""}`; }
 function contactoCell(r) { return r.reportante ? `${r.reportante}${r.telefono ? "<br><span style='color:var(--muted);font-size:10px'>" + r.telefono + "</span>" : ""}` : "—"; }
@@ -654,7 +657,7 @@ function renderAtencion() {
     { cls: "rep", ic: "⏳", num: pend.length, lab: "Pendientes de atención" },
     { cls: "rep", ic: "🆕", num: by("Reportado"), lab: "Reportados" },
     { cls: "aten", ic: "🛠️", num: by("En atención"), lab: "En atención" },
-    { cls: "insp", ic: "🔎", num: by("Inspeccionado"), lab: "Inspeccionados" },
+    { cls: "insp", ic: "🔎", num: by("Inspeccionado"), lab: "Con afectaciones" },
     { cls: "hecho", ic: "✅", num: cerr.length, lab: "Atendidos / cerrados" }
   ];
   el("kpis").innerHTML = cards.map(c =>
@@ -754,18 +757,18 @@ function renderNecesidades() {
     { cls: "rep", ic: "🔎", num: by("Identificada"), lab: "Identificadas" },
     { cls: "aten", ic: "⚙️", num: by("En gestión"), lab: "En gestión" },
     { cls: "hecho", ic: "✅", num: by("Cubierta"), lab: "Cubiertas" },
-    { cls: "insp", ic: "🟠", num: inspCount, lab: "Inspeccionados" }
+    { cls: "insp", ic: "🟠", num: inspCount, lab: "Con afectaciones" }
   ];
   el("kpis").innerHTML = cards.map(c => `<div class="kpi ${c.cls}"><div class="ic">${c.ic}</div><div><div class="num">${c.num}</div><div class="lab">${c.lab}</div></div></div>`).join("");
 
   destroyCharts();
   el("colLeft").innerHTML = card("Necesidades por tipo", "nGtipo") + card("Estado de gestión", "nGest", true) + card("Prioridad", "nGpri", true);
-  el("colRight").innerHTML = card("Necesidades por ubicación", "nGubic") + card("Inspeccionados (evaluación estructural)", "nGben") + card("Por responsable", "nGresp");
+  el("colRight").innerHTML = card("Necesidades por ubicación", "nGubic") + card("Con afectaciones (valoración detallada)", "nGben") + card("Por responsable", "nGresp");
   barH("nGtipo", topN(countBy(rows, "tipo"), 8), "#16b3b3");
   doughnut("nGest", countBy(rows, "estado"), NEC_ESTADO_COLOR);
   doughnut("nGpri", countBy(rows, "prioridad"), PRIOR_COLOR);
   barH("nGubic", topN(countBy(rows, "ubic"), 8), "#3aa0ff");
-  barH("nGben", [["Inspeccionados", inspCount]], "#ff8a3a"); // dato real; el resto queda sin datos
+  barH("nGben", [["Con afectaciones", inspCount]], "#ff8a3a"); // dato real; el resto queda sin datos
   barH("nGresp", topN(countBy(rows, "responsable"), 8), "#a06bff");
 
   renderMap(DATA); // muestra los puntos de reportes (incluidos los naranja/Inspeccionado) como contexto

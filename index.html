@@ -161,7 +161,7 @@
     <div class="f"><label>Ubicación (vereda/barrio)</label>
       <select id="fUbic" autocomplete="off"><option value="">Todas</option></select></div>
     <div class="f"><label>Estado</label>
-      <select id="fEstado" autocomplete="off"><option value="">Todos</option><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
+      <select id="fEstado" autocomplete="off"><option value="">Todos</option><option>Reportado</option><option>En atención</option><option value="Inspeccionado">Con afectaciones - valoración detallada</option><option>Crítico</option><option>Atendido</option></select></div>
     <div class="f"><label>Prioridad</label>
       <select id="fPrioridad" autocomplete="off"><option value="">Todas</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
     <div class="f"><label>Buscar</label>
@@ -193,7 +193,7 @@
         <div class="legend">
           <span><i class="dot" style="background:var(--rep)"></i>Reportado</span>
           <span><i class="dot" style="background:var(--aten)"></i>En atención</span>
-          <span><i class="dot" style="background:var(--insp)"></i>Inspeccionado</span>
+          <span><i class="dot" style="background:var(--insp)"></i>Con afectaciones - valoración detallada</span>
           <span><i class="dot" style="background:var(--crit)"></i>Crítico</span>
           <span><i class="dot" style="background:var(--hecho)"></i>Atendido</span>
         </div>
@@ -314,7 +314,7 @@
         <!-- ===== Común: personas / atención ===== -->
         <div class="grp-head">Atención y personas</div>
         <div class="fld"><label>Estado de atención *</label>
-          <select id="iEstado"><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
+          <select id="iEstado"><option>Reportado</option><option>En atención</option><option value="Inspeccionado">Con afectaciones - valoración detallada</option><option>Crítico</option><option>Atendido</option></select></div>
         <div class="fld"><label>Prioridad *</label>
           <select id="iPrioridad"><option>Alta</option><option selected>Media</option><option>Baja</option></select></div>
         <div class="fld"><label>¿Requiere visita técnica?</label>
@@ -394,7 +394,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="geodata.js?v=4"></script>
-<script src="geoportal.js?v=4"></script>
-<script src="reportes_iniciales.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="geodata.js?v=5"></script>
+<script src="geoportal.js?v=5"></script>
+<script src="reportes_iniciales.js?v=5"></script>
+<script src="app.js?v=5"></script>
