@@ -1112,6 +1112,10 @@ function boot() {
   loadNeeds();
   initMap();
   bindEvents();
+  clearFilters();   // los filtros siempre arrancan limpios (evita que el navegador restaure uno viejo)
   render();
 }
+function clearFilters() { ["fZona", "fUbic", "fEstado", "fPrioridad", "fBuscar"].forEach(id => { if (el(id)) el(id).value = ""; }); }
 document.addEventListener("DOMContentLoaded", boot);
+// Si el navegador restaura la página desde caché (bfcache), limpiar filtros y re-render
+window.addEventListener("pageshow", function (e) { if (e.persisted) { clearFilters(); if (window.map) render(); } });

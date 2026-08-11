@@ -155,17 +155,17 @@
       Tablero de atención de emergencias
       <small>Sismo del 10 de agosto de 2026 · Datos operativos</small></h1>
   </div>
-  <div class="filters">
+  <div class="filters" autocomplete="off">
     <div class="f"><label>Zona</label>
-      <select id="fZona"><option value="">Todas</option><option>Urbano</option><option>Rural</option></select></div>
+      <select id="fZona" autocomplete="off"><option value="">Todas</option><option>Urbano</option><option>Rural</option></select></div>
     <div class="f"><label>Ubicación (vereda/barrio)</label>
-      <select id="fUbic"><option value="">Todas</option></select></div>
+      <select id="fUbic" autocomplete="off"><option value="">Todas</option></select></div>
     <div class="f"><label>Estado</label>
-      <select id="fEstado"><option value="">Todos</option><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
+      <select id="fEstado" autocomplete="off"><option value="">Todos</option><option>Reportado</option><option>En atención</option><option>Inspeccionado</option><option>Crítico</option><option>Atendido</option></select></div>
     <div class="f"><label>Prioridad</label>
-      <select id="fPrioridad"><option value="">Todas</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+      <select id="fPrioridad" autocomplete="off"><option value="">Todas</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
     <div class="f"><label>Buscar</label>
-      <input id="fBuscar" type="text" placeholder="sitio, descripción…" /></div>
+      <input id="fBuscar" type="text" autocomplete="off" placeholder="sitio, descripción…" /></div>
     <button class="btn" id="btnFiltrar">🔍 Filtrar</button>
     <button class="btn ghost" id="btnClear">Limpiar</button>
     <button class="btn" id="btnNuevo">＋ Nuevo reporte</button>
@@ -394,7 +394,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="geodata.js?v=2"></script>
-<script src="geoportal.js?v=2"></script>
-<script src="reportes_iniciales.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="geodata.js?v=3"></script>
+<script src="geoportal.js?v=3"></script>
+<script src="reportes_iniciales.js?v=3"></script>
+<script src="app.js?v=3"></script>
