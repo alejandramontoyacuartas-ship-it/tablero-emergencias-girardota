@@ -386,13 +386,13 @@ function renderCharts(rows) {
 
   } else if (currentTab === "afectaciones") {
     L.innerHTML = card("Estado de atención", "cEstado", true) + card("Prioridad", "cPrior", true) + card("Tipo de afectación", "cTipo") + card("Animales afectados", "cAnim", true);
-    R.innerHTML = card("Viviendas afectadas por ubicación", "cViv") + card("Personas afectadas por ubicación", "cPer") + card("Viviendas: afectadas vs evacuadas", "cVE", true);
+    R.innerHTML = card("Viviendas afectadas por ubicación", "cViv") + card("Tipo de estructura", "cEstr") + card("Viviendas: afectadas vs evacuadas", "cVE", true);
     doughnut("cEstado", countBy(rows, "estado"), ESTADO_COLOR);
     doughnut("cPrior", countBy(rows, "prioridad"), PRIOR_COLOR);
     barH("cTipo", topN(countBy(rows, "tipo"), 7), "#f5a623");
     doughnut("cAnim", countBy(rows, "animales"), { "Sin animales afectados": "#8CC63F", "Con animales afectados": "#f5a623", "Sin dato": "#7a8a97" });
     barH("cViv", topN(sumBy(rows, "ubic", "vivAfect"), 7), "#e5484d");
-    barH("cPer", topN(sumBy(rows, "ubic", "personas"), 7), "#3aa0ff");
+    barH("cEstr", topN(countBy(rows, "tipoEstructura"), 8), "#3aa0ff");
     const vA = rows.reduce((s, r) => s + (+r.vivAfect || 0), 0), vE = rows.reduce((s, r) => s + (+r.vivEvac || 0), 0);
     barV("cVE", { "Afectadas": vA, "Evacuadas": vE }, { "Afectadas": "#e5484d", "Evacuadas": "#f5a623" });
   }
@@ -722,19 +722,11 @@ const NEC_TIPOS = ["Alojamiento temporal / albergue", "Ayuda alimentaria (mercad
   "Apoyo económico / arriendo", "Seguridad / acordonamiento", "Otro"];
 const NEC_ESTADO_COLOR = { "Identificada": "#3aa0ff", "En gestión": "#f5a623", "Cubierta": "#35c46b" };
 const NEC_BADGE = { "Identificada": "b-reportado", "En gestión": "b-atencion", "Cubierta": "b-atendido" };
-const STORE_NEC = "girardota_necesidades_v2";
+const STORE_NEC = "girardota_necesidades_v3";
 let NEEDS = [];
 
-function NEEDS_SEED() {
-  const mk = (o) => Object.assign({ id: uid(), fecha: "2026-08-11T09:00:00.000Z", cantidad: 0, unidad: "familias", personas: 0, prioridad: "Alta", responsable: "", obs: "" }, o);
-  return [
-    mk({ tipo: "Evaluación estructural (ingeniero)", zona: "Urbano", ubic: "Centro", sitio: "Edificios y viviendas con grietas (inspeccionadas)", estado: "En gestión", prioridad: "Alta", responsable: "Infraestructura / Obras Públicas", obs: "Priorizar edificios multifamiliares." }),
-    mk({ tipo: "Alojamiento temporal / albergue", zona: "Urbano", ubic: "Juan XXIII", sitio: "Familias evacuadas por fuga de gas y afectaciones", estado: "En gestión", prioridad: "Alta", responsable: "Bienestar / Social" }),
-    mk({ tipo: "Atención en salud", zona: "Rural", ubic: "Manga Arriba", sitio: "Adultos mayores (María de la Cruz / Luis Aníbal)", estado: "Identificada", prioridad: "Alta", responsable: "Salud", obs: "Adultos mayores; verificar condiciones de la vivienda." }),
-    mk({ tipo: "Ayuda alimentaria (mercados)", zona: "Rural", ubic: "Mercedes Abrego", sitio: "Familias afectadas zona rural", estado: "Identificada", prioridad: "Media", responsable: "Bienestar / Social" }),
-    mk({ tipo: "Restablecimiento de servicios públicos", zona: "Urbano", ubic: "Juan XXIII", sitio: "Control de fuga de gas", estado: "Cubierta", prioridad: "Alta", responsable: "Servicios Públicos", obs: "Atendido por Bomberos." })
-  ];
-}
+// Sin datos precargados: las necesidades se ingresan manualmente (menú desplegable).
+function NEEDS_SEED() { return []; }
 function loadNeeds() {
   const raw = localStorage.getItem(STORE_NEC);
   if (raw === null) { NEEDS = NEEDS_SEED(); saveNeeds(); }
@@ -776,8 +768,8 @@ function renderNecesidades() {
   barH("nGben", [["Inspeccionados", inspCount]], "#ff8a3a"); // dato real; el resto queda sin datos
   barH("nGresp", topN(countBy(rows, "responsable"), 8), "#a06bff");
 
-  if (markerLayer) markerLayer.clearLayers(); // las necesidades no se ubican en el mapa
-  el("mapTitle").textContent = "Mapa · Girardota (las necesidades se listan abajo)";
+  renderMap(DATA); // muestra los puntos de reportes (incluidos los naranja/Inspeccionado) como contexto
+  el("mapTitle").textContent = "Mapa · reportes (contexto) — las necesidades se listan abajo";
 
   const cols = [["Tipo", n => n.tipo], ["Ubicación", ubicCell], ["Detalle", n => n.sitio || "—"],
     ["Cantidad", n => n.cantidad ? (n.cantidad + " " + (n.unidad || "")) : "—"], ["Beneficiados", n => n.personas || "—"],
@@ -958,6 +950,7 @@ function openModal(id) {
     el("iEstudiantes").value = r.estudiantes || 0; el("iVivAfect").value = r.vivAfect || 0; el("iVivEvac").value = r.vivEvac || 0;
     el("iTipoEvento").value = r.tipoEvento || "Afectación por sismo";
     el("iAnimales").value = r.animales || "Sin animales afectados"; el("iAnimalesNum").value = r.animalesNum || 0;
+    el("iTipoEstructura").value = r.tipoEstructura || "";
     el("iSectorLocal").value = r.sectorLocal || ""; el("iCaracter").value = r.caracter || "Pública";
     el("iOperativa").value = r.operativa || "Operativa"; el("iEstadoInfra").value = r.estadoInfra || "Sin daño";
     el("iTipoEdificio").value = r.tipoEdificio || "Administrativo"; el("iSecretaria").value = r.secretaria || "";
@@ -998,6 +991,7 @@ function saveForm(e) {
     vivAfect: +el("iVivAfect").value || 0, vivEvac: +el("iVivEvac").value || 0,
     tipoEvento: el("iTipoEvento").value,
     animales: el("iAnimales").value, animalesNum: +el("iAnimalesNum").value || 0,
+    tipoEstructura: (sector === "afectaciones") ? el("iTipoEstructura").value : "",
     sectorLocal: sector === "afectaciones" ? el("iSectorLocal").value.trim() : "",
     caracter: sector === "educacion" ? el("iCaracter").value : "",
     institucion: sector === "educacion" ? el("iInstitucion").value : "",
