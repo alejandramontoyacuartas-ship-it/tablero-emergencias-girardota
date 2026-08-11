@@ -70,6 +70,14 @@ const ESTADO_BADGE = { "Reportado": "b-reportado", "En atención": "b-atencion",
 // Etiqueta visible de cada estado (el valor interno se mantiene por compatibilidad)
 const ESTADO_LABEL = { "Reportado": "Reportado", "En atención": "En atención", "Inspeccionado": "Con afectaciones - Monitoreo", "Crítico": "Crítico", "Atendido": "Atendido" };
 function estadoLabel(e) { return ESTADO_LABEL[e] || e; }
+// Conteo por estado usando la ETIQUETA visible (para que los gráficos coincidan con la leyenda)
+function countByEstado(rows) {
+  const m = {};
+  for (const r of rows) { const k = estadoLabel(r.estado || "Sin dato"); m[k] = (m[k] || 0) + 1; }
+  return m;
+}
+const ESTADO_COLOR_LABEL = {};
+Object.keys(ESTADO_COLOR).forEach(e => { ESTADO_COLOR_LABEL[estadoLabel(e)] = ESTADO_COLOR[e]; });
 const PRIOR_COLOR = { "Alta": "#e5484d", "Media": "#f5a623", "Baja": "#35c46b" };
 const OPER_COLOR = { "Operativa": "#35c46b", "Parcialmente operativa": "#f5a623", "No operativa": "#e5484d" };
 
@@ -361,7 +369,7 @@ function renderCharts(rows) {
     const secMap = countBy(rows, "sector");
     barV("cSector", { "Educación": secMap.educacion || 0, "Infraestr.": secMap.infraestructura || 0, "Afectaciones": secMap.afectaciones || 0 },
       { "Educación": "#3aa0ff", "Infraestr.": "#a06bff", "Afectaciones": "#f5a623" });
-    doughnut("cEstado", countBy(rows, "estado"), ESTADO_COLOR);
+    doughnut("cEstado", countByEstado(rows), ESTADO_COLOR_LABEL);
     doughnut("cPrior", countBy(rows, "prioridad"), PRIOR_COLOR);
     barH("cTipo", topN(countBy(rows, "tipoEvento"), 8), "#16b3b3");
     doughnut("cVisita", countBy(rows, "visita"), { "Sí": "#e5484d", "No": "#35c46b" });
@@ -370,7 +378,7 @@ function renderCharts(rows) {
   } else if (currentTab === "educacion") {
     L.innerHTML = card("Estado de atención", "cEstado", true) + card("Operatividad de sedes", "cOper", true) + card("Carácter (pública/privada)", "cCar", true);
     R.innerHTML = card("Estudiantes afectados por ubicación", "cEst") + card("Tipo de afectación", "cTipo") + card("Reportes por ubicación", "cUbic");
-    doughnut("cEstado", countBy(rows, "estado"), ESTADO_COLOR);
+    doughnut("cEstado", countByEstado(rows), ESTADO_COLOR_LABEL);
     doughnut("cOper", countBy(rows, "operativa"), OPER_COLOR);
     doughnut("cCar", countBy(rows, "caracter"), { "Pública": "#16b3b3", "Privada": "#a06bff", "Mixta": "#f5a623" });
     barH("cEst", topN(sumBy(rows, "ubic", "estudiantes"), 7), "#f5a623");
@@ -380,7 +388,7 @@ function renderCharts(rows) {
   } else if (currentTab === "infraestructura") {
     L.innerHTML = card("Estado de atención", "cEstado", true) + card("Operatividad", "cOper", true) + card("Estado estructural", "cEstr", true);
     R.innerHTML = card("Tipo de infraestructura afectada", "cTipo") + card("Reportes por secretaría", "cSec") + card("Reportes por ubicación", "cUbic");
-    doughnut("cEstado", countBy(rows, "estado"), ESTADO_COLOR);
+    doughnut("cEstado", countByEstado(rows), ESTADO_COLOR_LABEL);
     doughnut("cOper", countBy(rows, "operativa"), OPER_COLOR);
     doughnut("cEstr", countBy(rows, "estadoInfra"), null);
     barH("cTipo", topN(countBy(rows, "tipo"), 8), "#a06bff");
@@ -390,7 +398,7 @@ function renderCharts(rows) {
   } else if (currentTab === "afectaciones") {
     L.innerHTML = card("Estado de atención", "cEstado", true) + card("Prioridad", "cPrior", true) + card("Tipo de afectación", "cTipo") + card("Animales afectados", "cAnim", true);
     R.innerHTML = card("Viviendas afectadas por ubicación", "cViv") + card("Tipo de estructura", "cEstr") + card("Viviendas: afectadas vs evacuadas", "cVE", true);
-    doughnut("cEstado", countBy(rows, "estado"), ESTADO_COLOR);
+    doughnut("cEstado", countByEstado(rows), ESTADO_COLOR_LABEL);
     doughnut("cPrior", countBy(rows, "prioridad"), PRIOR_COLOR);
     barH("cTipo", topN(countBy(rows, "tipo"), 7), "#f5a623");
     doughnut("cAnim", countBy(rows, "animales"), { "Sin animales afectados": "#8CC63F", "Con animales afectados": "#f5a623", "Sin dato": "#7a8a97" });
@@ -672,7 +680,7 @@ function renderAtencion() {
   el("colLeft").innerHTML = card("Pendientes por prioridad", "aPrior", true) + card("Pendientes por estado", "aEstado", true) + card("Pendientes por sector", "aSector", true);
   el("colRight").innerHTML = card("Pendientes por ubicación", "aUbic") + card("Pendientes por tipo", "aTipo") + card("Pendientes por zona", "aZona", true);
   doughnut("aPrior", countBy(pend, "prioridad"), PRIOR_COLOR);
-  doughnut("aEstado", countBy(pend, "estado"), ESTADO_COLOR);
+  doughnut("aEstado", countByEstado(pend), ESTADO_COLOR_LABEL);
   const secMap = countBy(pend, "sector");
   barV("aSector", { "Educación": secMap.educacion || 0, "Infraestr.": secMap.infraestructura || 0, "Afectaciones": secMap.afectaciones || 0 },
     { "Educación": "#3aa0ff", "Infraestr.": "#a06bff", "Afectaciones": "#f5a623" });
