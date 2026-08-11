@@ -539,7 +539,7 @@ function renderMap(rows) {
     let lat = r.lat, lon = r.lon;
     if (lat == null || lon == null) continue; // sin coordenadas exactas -> no se dibuja en el mapa
     const color = ESTADO_COLOR[r.estado] || "#16b3b3";
-    const size = 28; // todos los puntos calientes del mismo tamaño
+    const size = 15; // todos los puntos calientes del mismo tamaño (pequeños, evitan encimarse)
     const icon = L.divIcon({
       className: "heatpt",
       html: `<b style="--c:${color}"></b>`,
