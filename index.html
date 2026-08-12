@@ -123,6 +123,8 @@
   .footer-note{color:var(--muted);font-size:11px;text-align:center;padding:14px}
   .tag-demo{background:#3a2a10;color:#ffce7a;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px}
   .grp-head{grid-column:1/-1;color:var(--accent);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+  .fld label.chk{display:flex;align-items:center;gap:8px;text-transform:none;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;margin:0}
+  .fld label.chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
   .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
   .thumb{position:relative;width:72px;height:72px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -178,7 +180,7 @@
   <button class="tab" data-tab="educacion">🏫 Escuelas / Educación</button>
   <button class="tab" data-tab="infraestructura">🏛️ Infraestructura pública</button>
   <button class="tab" data-tab="afectaciones">⚠️ Reportes de afectaciones</button>
-  <button class="tab" data-tab="necesidades">🧰 Necesidades</button>
+  <button class="tab" data-tab="necesidades">🧰 Necesidades (EDAN)</button>
 </nav>
 
 <main>
@@ -360,30 +362,48 @@
 <!-- Modal: Nueva necesidad -->
 <div class="modal-bg" id="modalNecBg">
   <div class="modal">
-    <h2 id="necTitle">Nueva necesidad</h2>
-    <p class="sub">Identificación de necesidades para la atención · CMGRD Girardota</p>
+    <h2 id="necTitle">Nuevo registro EDAN</h2>
+    <p class="sub">Evaluación de Daños y Análisis de Necesidades (EDAN) · CMGRD Girardota</p>
     <form id="formNec">
       <input type="hidden" id="nId" />
       <div class="form-grid">
-        <div class="fld full"><label>Tipo de necesidad *</label>
-          <select id="nTipo" required></select></div>
-        <div class="fld"><label>Zona</label>
-          <select id="nZona"><option>Urbano</option><option>Rural</option></select></div>
-        <div class="fld"><label>Ubicación (vereda/barrio)</label>
-          <select id="nUbic"></select></div>
-        <div class="fld full"><label>Detalle / lugar</label>
-          <input id="nSitio" placeholder="Ej: familias evacuadas edificio Carrera 9" /></div>
-        <div class="fld"><label>Cantidad</label><input id="nCantidad" type="number" min="0" value="0" /></div>
-        <div class="fld"><label>Unidad</label>
-          <select id="nUnidad"><option>familias</option><option>personas</option><option>kits</option><option>mercados</option><option>colchonetas</option><option>unidades</option><option>m³</option><option>viviendas</option><option>otro</option></select></div>
-        <div class="fld"><label>Personas beneficiadas</label><input id="nPersonas" type="number" min="0" value="0" /></div>
-        <div class="fld"><label>Prioridad</label>
-          <select id="nPrioridad"><option>Alta</option><option>Media</option><option>Baja</option></select></div>
-        <div class="fld"><label>Estado de gestión *</label>
-          <select id="nEstado"><option>Identificada</option><option>En gestión</option><option>Cubierta</option></select></div>
-        <div class="fld"><label>Responsable</label>
-          <select id="nResponsable"><option value="">— Seleccionar —</option><option>Gestión del Riesgo</option><option>Gobierno</option><option>Salud</option><option>Infraestructura / Obras Públicas</option><option>Educación</option><option>Bienestar / Social</option><option>Servicios Públicos</option><option>Bomberos</option><option>Cruz Roja / Defensa Civil</option><option>Departamento / DAPARD</option><option>Otra</option></select></div>
-        <div class="fld full"><label>Observaciones</label><textarea id="nObs" placeholder="Detalle de la necesidad, gestión realizada…"></textarea></div>
+        <div class="grp-head">Información demográfica</div>
+        <div class="fld"><label>Nombres *</label><input id="nNombres" required /></div>
+        <div class="fld"><label>Apellidos *</label><input id="nApellidos" required /></div>
+        <div class="fld"><label>Tipo de documento</label>
+          <select id="nTipoDoc"><option>CC</option><option>TI</option><option>RC</option><option>CE</option><option>PPT</option><option>Pasaporte</option><option>NUIP</option><option>Otro</option></select></div>
+        <div class="fld"><label>Número de documento</label><input id="nNumDoc" /></div>
+        <div class="fld"><label>Parentesco con jefe de hogar</label>
+          <select id="nParentesco"><option>Jefe de hogar</option><option>Cónyuge / compañero(a)</option><option>Hijo(a)</option><option>Padre / Madre</option><option>Hermano(a)</option><option>Abuelo(a)</option><option>Otro familiar</option><option>No familiar</option></select></div>
+        <div class="fld"><label>Género</label><select id="nGenero"><option>Femenino</option><option>Masculino</option><option>Otro</option></select></div>
+        <div class="fld"><label>Edad</label><input id="nEdad" type="number" min="0" /></div>
+        <div class="fld"><label>Etnia</label>
+          <select id="nEtnia"><option>Ninguna</option><option>Indígena</option><option>Afrocolombiano / Negro</option><option>Raizal</option><option>Palenquero</option><option>Rom / Gitano</option><option>Otro</option></select></div>
+
+        <div class="grp-head">Salud</div>
+        <div class="fld"><label>Estado de salud</label>
+          <select id="nEstadoSalud"><option>Sano</option><option>Enfermo / lesionado</option><option>Requiere atención</option><option>Persona con discapacidad</option></select></div>
+        <div class="fld"><label>Afiliación al régimen de salud</label>
+          <select id="nRegimen"><option>Contributivo</option><option>Subsidiado</option><option>Especial</option><option>No afiliado</option></select></div>
+
+        <div class="grp-head">Vivienda</div>
+        <div class="fld"><label>Ubicación del inmueble (zona)</label><select id="nZona"><option>Urbano</option><option>Rural</option></select></div>
+        <div class="fld"><label>Vereda / barrio</label><select id="nUbic"></select></div>
+        <div class="fld full"><label>Dirección / lugar</label><input id="nSitio" placeholder="Dirección o sector" /></div>
+        <div class="fld"><label>Propiedad del inmueble</label>
+          <select id="nPropiedad"><option>Propia</option><option>Arriendo</option><option>Familiar</option><option>Otro</option></select></div>
+        <div class="fld"><label>Estado del inmueble</label>
+          <select id="nEstadoInmueble"><option>Habitable</option><option>Uso restringido</option><option>No habitable</option><option>Colapsado</option><option>En evaluación</option></select></div>
+
+        <div class="grp-head">Necesidades (marca las que apliquen)</div>
+        <div class="fld"><label class="chk"><input type="checkbox" id="nAhAlim"> AHE Alimentaria</label></div>
+        <div class="fld"><label class="chk"><input type="checkbox" id="nAhNoAlim"> AHE No Alimentaria</label></div>
+        <div class="fld"><label class="chk"><input type="checkbox" id="nMatRehab"> Materiales rehab. de vivienda</label></div>
+        <div class="fld"><label class="chk"><input type="checkbox" id="nSubArriendo"> Subsidio de arriendo</label></div>
+
+        <div class="grp-head">Contacto y observaciones</div>
+        <div class="fld"><label>Teléfono</label><input id="nTelefono" type="tel" /></div>
+        <div class="fld full"><label>Observaciones</label><textarea id="nObs" placeholder="Observaciones EDAN…"></textarea></div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" id="btnNecCancel">Cancelar</button>
@@ -395,7 +415,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="geodata.js?v=29"></script>
-<script src="geoportal.js?v=29"></script>
-<script src="reportes_iniciales.js?v=29"></script>
-<script src="app.js?v=29"></script>
+<script src="geodata.js?v=30"></script>
+<script src="geoportal.js?v=30"></script>
+<script src="reportes_iniciales.js?v=30"></script>
+<script src="app.js?v=30"></script>

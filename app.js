@@ -720,19 +720,27 @@ function closeReport(id) {
 }
 
 /* ============================================================
-   NECESIDADES — identificación de necesidades para la atención
+   NECESIDADES — Registro EDAN (Evaluación de Daños y Análisis de
+   Necesidades) · formato VOL-3 FR-1703-SMD-08. Un registro por
+   persona/hogar afectado por el sismo.
    ============================================================ */
-const NEC_TIPOS = ["Alojamiento temporal / albergue", "Ayuda alimentaria (mercados)", "Kits de aseo e higiene",
-  "Colchonetas / cobijas / menaje", "Agua potable", "Atención en salud", "Apoyo psicosocial",
-  "Evaluación estructural (ingeniero)", "Reubicación / evacuación", "Materiales de construcción / reparación",
-  "Maquinaria / remoción de escombros", "Restablecimiento de servicios públicos", "Transporte",
-  "Apoyo económico / arriendo", "Seguridad / acordonamiento", "Otro"];
-const NEC_ESTADO_COLOR = { "Identificada": "#3aa0ff", "En gestión": "#f5a623", "Cubierta": "#35c46b" };
-const NEC_BADGE = { "Identificada": "b-reportado", "En gestión": "b-atencion", "Cubierta": "b-atendido" };
+// Las 4 necesidades EDAN (AHE = Asistencia Humanitaria de Emergencia)
+const EDAN_NEC = [
+  { k: "ahAlim", lab: "AHE Alimentaria" },
+  { k: "ahNoAlim", lab: "AHE No Alimentaria" },
+  { k: "matRehab", lab: "Mat. rehab. vivienda" },
+  { k: "subArriendo", lab: "Subsidio de arriendo" }
+];
+const INMUEBLE_COLOR = {
+  "Habitable": "#35c46b", "Uso restringido": "#f5a623", "No habitable": "#ff8a3a",
+  "Colapsado": "#e5484d", "En evaluación": "#3aa0ff"
+};
+const PROP_COLOR = { "Propia": "#35c46b", "Arriendo": "#f5a623", "Familiar": "#3aa0ff", "Otro": "#a06bff" };
+const GENERO_COLOR = { "Femenino": "#ff7ab6", "Masculino": "#3aa0ff", "Otro": "#a06bff" };
 const STORE_NEC = "girardota_necesidades_v3";
 let NEEDS = [];
 
-// Sin datos precargados: las necesidades se ingresan manualmente (menú desplegable).
+// Sin datos precargados: los registros EDAN se ingresan manualmente.
 function NEEDS_SEED() { return []; }
 function loadNeeds() {
   const raw = localStorage.getItem(STORE_NEC);
@@ -746,70 +754,83 @@ function needsFiltered() {
   return NEEDS.filter(n => {
     if (f.zona && n.zona !== f.zona) return false;
     if (f.ubic && n.ubic !== f.ubic) return false;
-    if (f.prioridad && n.prioridad !== f.prioridad) return false;
-    if (f.q) { const hay = (n.tipo + " " + n.sitio + " " + n.obs + " " + (n.responsable || "") + " " + n.ubic).toLowerCase(); if (!hay.includes(f.q)) return false; }
+    if (f.q) {
+      const hay = ((n.nombres || "") + " " + (n.apellidos || "") + " " + (n.numDoc || "") + " " + (n.ubic || "") + " " + (n.sitio || "") + " " + (n.obs || "")).toLowerCase();
+      if (!hay.includes(f.q)) return false;
+    }
     return true;
   });
 }
 
+// Grupos etarios EDAN
+function edadGrupo(e) { e = +e || 0; return e < 6 ? "0-5" : e < 18 ? "6-17" : e < 60 ? "18-59" : "60+"; }
+
 function renderNecesidades() {
   const rows = needsFiltered();
-  const by = e => rows.filter(n => n.estado === e).length;
-  const inspCount = DATA.filter(r => r.estado === "Inspeccionado").length;
+  const cnt = k => rows.filter(n => n[k]).length;
   const cards = [
-    { cls: "total", ic: "🧰", num: rows.length, lab: "Necesidades" },
-    { cls: "rep", ic: "🔎", num: by("Identificada"), lab: "Identificadas" },
-    { cls: "aten", ic: "⚙️", num: by("En gestión"), lab: "En gestión" },
-    { cls: "hecho", ic: "✅", num: by("Cubierta"), lab: "Cubiertas" },
-    { cls: "insp", ic: "🟠", num: inspCount, lab: "Con afectaciones" }
+    { cls: "total", ic: "📋", num: rows.length, lab: "Registros EDAN" },
+    { cls: "rep", ic: "🍲", num: cnt("ahAlim"), lab: "AHE Alimentaria" },
+    { cls: "aten", ic: "📦", num: cnt("ahNoAlim"), lab: "AHE No Alimentaria" },
+    { cls: "insp", ic: "🧱", num: cnt("matRehab"), lab: "Mat. rehab. vivienda" },
+    { cls: "crit", ic: "🏠", num: cnt("subArriendo"), lab: "Subsidio arriendo" }
   ];
   el("kpis").innerHTML = cards.map(c => `<div class="kpi ${c.cls}"><div class="ic">${c.ic}</div><div><div class="num">${c.num}</div><div class="lab">${c.lab}</div></div></div>`).join("");
 
   destroyCharts();
-  el("colLeft").innerHTML = card("Necesidades por tipo", "nGtipo") + card("Estado de gestión", "nGest", true) + card("Prioridad", "nGpri", true);
-  el("colRight").innerHTML = card("Necesidades por ubicación", "nGubic") + card("Con afectaciones - Monitoreo", "nGben") + card("Por responsable", "nGresp");
-  barH("nGtipo", topN(countBy(rows, "tipo"), 8), "#16b3b3");
-  doughnut("nGest", countBy(rows, "estado"), NEC_ESTADO_COLOR);
-  doughnut("nGpri", countBy(rows, "prioridad"), PRIOR_COLOR);
+  el("colLeft").innerHTML = card("Necesidades (EDAN)", "nGnec") + card("Estado del inmueble", "nGinm", true) + card("Propiedad del inmueble", "nGprop", true);
+  el("colRight").innerHTML = card("Registros por ubicación", "nGubic") + card("Por género", "nGgen", true) + card("Grupos etarios", "nGedad", true);
+  barH("nGnec", EDAN_NEC.map(n => [n.lab, cnt(n.k)]), "#16b3b3");
+  doughnut("nGinm", countBy(rows, "estadoInmueble"), INMUEBLE_COLOR);
+  doughnut("nGprop", countBy(rows, "propiedad"), PROP_COLOR);
   barH("nGubic", topN(countBy(rows, "ubic"), 8), "#3aa0ff");
-  barH("nGben", [["Con afectaciones", inspCount]], "#ff8a3a"); // dato real; el resto queda sin datos
-  barH("nGresp", topN(countBy(rows, "responsable"), 8), "#a06bff");
+  doughnut("nGgen", countBy(rows, "genero"), GENERO_COLOR);
+  const edad = {}; rows.forEach(n => { const g = edadGrupo(n.edad); edad[g] = (edad[g] || 0) + 1; });
+  barV("nGedad", edad, { "0-5": "#8CC63F", "6-17": "#3aa0ff", "18-59": "#16b3b3", "60+": "#a06bff" });
 
-  renderMap(DATA); // muestra los puntos de reportes (incluidos los naranja/Inspeccionado) como contexto
-  el("mapTitle").textContent = "Mapa · reportes (contexto) — las necesidades se listan abajo";
+  renderMap(DATA); // muestra los puntos de reportes como contexto
+  el("mapTitle").textContent = "Mapa · reportes (contexto) — el registro EDAN se lista abajo";
 
-  const cols = [["Tipo", n => n.tipo], ["Ubicación", ubicCell], ["Detalle", n => n.sitio || "—"],
-    ["Cantidad", n => n.cantidad ? (n.cantidad + " " + (n.unidad || "")) : "—"], ["Beneficiados", n => n.personas || "—"],
-    ["Prioridad", n => `<span class="p-${(n.prioridad || "media").toLowerCase()}">${n.prioridad}</span>`],
-    ["Estado", n => `<span class="badge ${NEC_BADGE[n.estado] || ""}">${n.estado}</span>`],
-    ["Responsable", n => n.responsable || "—"],
+  const necChips = n => { const c = EDAN_NEC.filter(x => n[x.k]).map(x => `<span class="badge b-atencion">${x.lab.replace("AHE ", "").replace("Mat. rehab. vivienda", "Mat.").replace("Subsidio de arriendo", "Arriendo")}</span>`); return c.length ? c.join(" ") : "—"; };
+  const cols = [
+    ["Nombre", n => (`${n.nombres || ""} ${n.apellidos || ""}`).trim() || "—"],
+    ["Documento", n => n.numDoc ? `${n.tipoDoc || ""} ${n.numDoc}` : "—"],
+    ["Parentesco", n => n.parentesco || "—"],
+    ["Género / Edad", n => `${n.genero || "—"}${n.edad ? " · " + n.edad : ""}`],
+    ["Ubicación", ubicCell],
+    ["Propiedad", n => n.propiedad || "—"],
+    ["Estado inmueble", n => `<span class="badge" style="background:${INMUEBLE_COLOR[n.estadoInmueble] || "#556"}22;color:${INMUEBLE_COLOR[n.estadoInmueble] || "#889"};border:1px solid ${INMUEBLE_COLOR[n.estadoInmueble] || "#556"}55">${n.estadoInmueble || "—"}</span>`],
+    ["Necesidades", necChips],
     ["", n => `<span class="row-act" data-editnec="${n.id}">✎</span> <span class="row-act" data-delnec="${n.id}">🗑</span>`]];
   el("tbl").querySelector("thead").innerHTML = "<tr>" + cols.map(c => `<th>${c[0]}</th>`).join("") + "</tr>";
   const tb = el("tbl").querySelector("tbody");
-  if (!rows.length) tb.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty">Sin necesidades registradas. Usa “＋ Nueva necesidad”.</div></td></tr>`;
+  if (!rows.length) tb.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty">Sin registros EDAN. Usa “＋ Nuevo registro EDAN”.</div></td></tr>`;
   else tb.innerHTML = rows.map(n => "<tr>" + cols.map(c => `<td>${c[1](n)}</td>`).join("") + "</tr>").join("");
   tb.querySelectorAll("[data-editnec]").forEach(b => b.onclick = () => openNec(b.dataset.editnec));
-  tb.querySelectorAll("[data-delnec]").forEach(b => b.onclick = () => { if (confirm("¿Eliminar esta necesidad?")) { NEEDS = NEEDS.filter(x => x.id !== b.dataset.delnec); saveNeeds(); render(); } });
+  tb.querySelectorAll("[data-delnec]").forEach(b => b.onclick = () => { if (confirm("¿Eliminar este registro EDAN?")) { NEEDS = NEEDS.filter(x => x.id !== b.dataset.delnec); saveNeeds(); render(); } });
 
-  el("tblTitle").textContent = "Necesidades para la atención (" + rows.length + ")";
+  el("tblTitle").textContent = "Registro EDAN — Evaluación de Daños y Análisis de Necesidades (" + rows.length + ")";
 }
 
-/* ---- Modal de necesidades ---- */
-function fillNecTipos() {
-  const s = el("nTipo"); s.innerHTML = "";
-  NEC_TIPOS.forEach(t => { const o = document.createElement("option"); o.textContent = t; s.appendChild(o); });
-}
+/* ---- Modal de registro EDAN ---- */
 function openNec(id) {
   el("modalNecBg").classList.add("open");
+  const set = (k, v) => { const e = el(k); if (e) e.value = v; };
   if (id) {
     const n = NEEDS.find(x => x.id === id); if (!n) return;
-    el("necTitle").textContent = "Editar necesidad";
-    el("nId").value = n.id; el("nTipo").value = n.tipo; el("nZona").value = n.zona || "Urbano"; el("nUbic").value = n.ubic || "";
-    el("nSitio").value = n.sitio || ""; el("nCantidad").value = n.cantidad || 0; el("nUnidad").value = n.unidad || "familias";
-    el("nPersonas").value = n.personas || 0; el("nPrioridad").value = n.prioridad || "Alta"; el("nEstado").value = n.estado || "Identificada";
-    el("nResponsable").value = n.responsable || ""; el("nObs").value = n.obs || "";
+    el("necTitle").textContent = "Editar registro EDAN"; el("nId").value = n.id;
+    set("nNombres", n.nombres || ""); set("nApellidos", n.apellidos || "");
+    set("nTipoDoc", n.tipoDoc || "CC"); set("nNumDoc", n.numDoc || "");
+    set("nParentesco", n.parentesco || "Jefe de hogar"); set("nGenero", n.genero || "Femenino");
+    set("nEdad", n.edad || ""); set("nEtnia", n.etnia || "Ninguna");
+    set("nEstadoSalud", n.estadoSalud || "Sano"); set("nRegimen", n.regimen || "Subsidiado");
+    set("nZona", n.zona || "Urbano"); set("nUbic", n.ubic || ""); set("nSitio", n.sitio || "");
+    set("nPropiedad", n.propiedad || "Propia"); set("nEstadoInmueble", n.estadoInmueble || "En evaluación");
+    el("nAhAlim").checked = !!n.ahAlim; el("nAhNoAlim").checked = !!n.ahNoAlim;
+    el("nMatRehab").checked = !!n.matRehab; el("nSubArriendo").checked = !!n.subArriendo;
+    set("nTelefono", n.telefono || ""); set("nObs", n.obs || "");
   } else {
-    el("necTitle").textContent = "Nueva necesidad"; el("formNec").reset(); el("nId").value = "";
+    el("necTitle").textContent = "Nuevo registro EDAN"; el("formNec").reset(); el("nId").value = "";
   }
 }
 function closeNec() { el("modalNecBg").classList.remove("open"); }
@@ -818,10 +839,16 @@ function saveNec(e) {
   const id = el("nId").value;
   const rec = {
     id: id || uid(), fecha: id ? NEEDS.find(x => x.id === id).fecha : new Date().toISOString(),
-    tipo: el("nTipo").value, zona: el("nZona").value, ubic: el("nUbic").value,
-    sitio: el("nSitio").value.trim(), cantidad: +el("nCantidad").value || 0, unidad: el("nUnidad").value,
-    personas: +el("nPersonas").value || 0, prioridad: el("nPrioridad").value, estado: el("nEstado").value,
-    responsable: el("nResponsable").value, obs: el("nObs").value.trim()
+    nombres: el("nNombres").value.trim(), apellidos: el("nApellidos").value.trim(),
+    tipoDoc: el("nTipoDoc").value, numDoc: el("nNumDoc").value.trim(),
+    parentesco: el("nParentesco").value, genero: el("nGenero").value,
+    edad: +el("nEdad").value || "", etnia: el("nEtnia").value,
+    estadoSalud: el("nEstadoSalud").value, regimen: el("nRegimen").value,
+    zona: el("nZona").value, ubic: el("nUbic").value, sitio: el("nSitio").value.trim(),
+    propiedad: el("nPropiedad").value, estadoInmueble: el("nEstadoInmueble").value,
+    ahAlim: el("nAhAlim").checked, ahNoAlim: el("nAhNoAlim").checked,
+    matRehab: el("nMatRehab").checked, subArriendo: el("nSubArriendo").checked,
+    telefono: el("nTelefono").value.trim(), obs: el("nObs").value.trim()
   };
   if (id) { const i = NEEDS.findIndex(x => x.id === id); NEEDS[i] = rec; } else { NEEDS.push(rec); }
   saveNeeds(); closeNec(); render();
@@ -1044,10 +1071,16 @@ function exportCSV() {
   const esc = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
   if (currentTab === "necesidades") {
     const rows = needsFiltered();
-    const cols = ["fecha", "tipo", "zona", "ubic", "sitio", "cantidad", "unidad", "personas", "prioridad", "estado", "responsable", "obs"];
-    const csv = [cols.join(",")].concat(rows.map(r => cols.map(c => esc(r[c])).join(","))).join("\n");
+    const cols = ["fecha", "nombres", "apellidos", "tipoDoc", "numDoc", "parentesco", "genero", "edad", "etnia",
+      "estadoSalud", "regimen", "zona", "ubic", "sitio", "propiedad", "estadoInmueble",
+      "ahAlim", "ahNoAlim", "matRehab", "subArriendo", "telefono", "obs"];
+    const head = ["Fecha", "Nombres", "Apellidos", "Tipo doc", "Número doc", "Parentesco", "Género", "Edad", "Etnia",
+      "Estado de salud", "Régimen de salud", "Zona", "Vereda/Barrio", "Dirección", "Propiedad inmueble", "Estado inmueble",
+      "AHE Alimentaria", "AHE No Alimentaria", "Mat. rehab. vivienda", "Subsidio arriendo", "Teléfono", "Observaciones"];
+    const bk = { ahAlim: 1, ahNoAlim: 1, matRehab: 1, subArriendo: 1 };
+    const csv = [head.join(",")].concat(rows.map(r => cols.map(c => esc(bk[c] ? (r[c] ? "SI" : "NO") : r[c])).join(","))).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "necesidades_girardota.csv"; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "edan_necesidades_girardota.csv"; a.click();
     return;
   }
   const rows = filtered();
@@ -1067,7 +1100,7 @@ function exportCSV() {
 function setTab(t) {
   currentTab = t;
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  el("btnNuevo").textContent = (t === "necesidades") ? "＋ Nueva necesidad" : "＋ Nuevo reporte";
+  el("btnNuevo").textContent = (t === "necesidades") ? "＋ Nuevo registro EDAN" : "＋ Nuevo reporte";
   render();
   setTimeout(() => map && map.invalidateSize(), 60);
 }
@@ -1114,7 +1147,6 @@ function boot() {
   fillInstituciones();
   fillSedes(el("iInstitucion").value);
   fillTipos("afectaciones");
-  fillNecTipos();
   load();
   loadNeeds();
   initMap();
