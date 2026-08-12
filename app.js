@@ -289,13 +289,17 @@ function renderKPIs(rows) {
   } else if (currentTab === "afectaciones") {
     const vivA = rows.reduce((s, r) => s + (+r.vivAfect || 0), 0);
     const vivE = rows.reduce((s, r) => s + (+r.vivEvac || 0), 0);
-    const per = rows.reduce((s, r) => s + (+r.personas || 0), 0);
+    // Verificado en campo = ya tuvo visita (visita "Sí") o su estado implica intervención en terreno.
+    const visitado = r => String(r.visita || "").toLowerCase().startsWith("s") || r.estado === "Inspeccionado" || r.estado === "Atendido";
+    const perVerif = rows.reduce((s, r) => s + (visitado(r) ? (+r.personas || 0) : 0), 0);
+    const perPend = rows.reduce((s, r) => s + (!visitado(r) ? (+r.personas || 0) : 0), 0);
     const her = rows.reduce((s, r) => s + (+r.heridos || 0), 0);
     cards = [
       { cls: "rep", ic: "⚠️", num: n, lab: "Reportes" },
       { cls: "rep", ic: "🏠", num: vivA, lab: "Viviendas afectadas" },
       { cls: "aten", ic: "📦", num: vivE, lab: "Viviendas evacuadas" },
-      { cls: "insp", ic: "👥", num: per, lab: "Personas afectadas" },
+      { cls: "hecho", ic: "👥", num: perVerif, lab: "Personas verificadas (con visita)" },
+      { cls: "aten", ic: "🕒", num: perPend, lab: "Personas reportadas pendientes" },
       { cls: "rep", ic: "🚑", num: her, lab: "Heridos" }
     ];
   }
