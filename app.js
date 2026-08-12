@@ -227,6 +227,7 @@ function filtered(ignoreEstado) {
   const f = getFilters();
   return DATA.filter(r => {
     if (currentTab !== "resumen" && currentTab !== "atencion" && r.sector !== currentTab) return false;
+    if (currentTab !== "resumen" && currentTab !== "atencion" && r.campo) return false; // los eventos de atención en campo solo van en la pestaña Atención
     if (f.zona && r.zona !== f.zona) return false;
     if (f.ubic && r.ubic !== f.ubic) return false;
     if (!ignoreEstado && f.estado && r.estado !== f.estado) return false;
@@ -659,62 +660,53 @@ function render() {
    ============================================================ */
 const PRANK = { "Alta": 0, "Media": 1, "Baja": 2 };
 function renderAtencion() {
-  const all = filtered();
-  const pend = all.filter(r => r.estado !== "Atendido");
-  const cerr = all.filter(r => r.estado === "Atendido");
-  const by = e => pend.filter(r => r.estado === e).length;
+  // Solo los eventos marcados como atención en campo (emergencias atendidas en sitio)
+  const rows = filtered().filter(r => r.campo);
+  const by = e => rows.filter(r => r.estado === e).length;
 
-  // KPIs
   const cards = [
-    { cls: "rep", ic: "⏳", num: pend.length, lab: "Pendientes de atención" },
-    { cls: "rep", ic: "🆕", num: by("Reportado"), lab: "Reportados" },
+    { cls: "total", ic: "🚨", num: rows.length, lab: "Atenciones en campo" },
     { cls: "aten", ic: "🛠️", num: by("En atención"), lab: "En atención" },
     { cls: "insp", ic: "🔎", num: by("Inspeccionado"), lab: "Con afectaciones" },
-    { cls: "hecho", ic: "✅", num: cerr.length, lab: "Atendidos / cerrados" }
+    { cls: "crit", ic: "🔴", num: by("Crítico"), lab: "Críticas" },
+    { cls: "hecho", ic: "✅", num: by("Atendido"), lab: "Atendidas" }
   ];
   el("kpis").innerHTML = cards.map(c =>
     `<div class="kpi ${c.cls}"><div class="ic">${c.ic}</div><div><div class="num">${c.num}</div><div class="lab">${c.lab}</div></div></div>`).join("");
 
-  // Gráficos (sobre pendientes)
   destroyCharts();
-  el("colLeft").innerHTML = card("Pendientes por prioridad", "aPrior", true) + card("Pendientes por estado", "aEstado", true) + card("Pendientes por sector", "aSector", true);
-  el("colRight").innerHTML = card("Pendientes por ubicación", "aUbic") + card("Pendientes por tipo", "aTipo") + card("Pendientes por zona", "aZona", true);
-  doughnut("aPrior", countBy(pend, "prioridad"), PRIOR_COLOR);
-  doughnut("aEstado", countByEstado(pend), ESTADO_COLOR_LABEL);
-  const secMap = countBy(pend, "sector");
-  barV("aSector", { "Educación": secMap.educacion || 0, "Infraestr.": secMap.infraestructura || 0, "Afectaciones": secMap.afectaciones || 0 },
-    { "Educación": "#3aa0ff", "Infraestr.": "#a06bff", "Afectaciones": "#f5a623" });
-  barH("aUbic", topN(countBy(pend, "ubic"), 8), "#e5484d");
-  barH("aTipo", topN(countBy(pend, "tipo"), 8), "#f5a623");
-  doughnut("aZona", countBy(pend, "zona"), { "Urbano": "#8CC63F", "Rural": "#3aa0ff" });
+  el("colLeft").innerHTML = card("Por estado", "aEstado", true) + card("Por prioridad", "aPrior", true) + card("Por tipo de emergencia", "aTipo");
+  el("colRight").innerHTML = card("Por ubicación", "aUbic") + card("Por zona", "aZona", true);
+  doughnut("aEstado", countByEstado(rows), ESTADO_COLOR_LABEL);
+  doughnut("aPrior", countBy(rows, "prioridad"), PRIOR_COLOR);
+  barH("aTipo", topN(countBy(rows, "tipoEvento"), 8), "#f5a623");
+  barH("aUbic", topN(countBy(rows, "ubic"), 8), "#3aa0ff");
+  doughnut("aZona", countBy(rows, "zona"), { "Urbano": "#8CC63F", "Rural": "#3aa0ff" });
 
-  // Mapa: solo pendientes
-  renderMap(pend);
+  renderMap(rows);
 
-  // Lista de trabajo (worklist): pendientes por prioridad y antigüedad
-  const list = pend.slice().sort((a, b) =>
-    (PRANK[a.prioridad] - PRANK[b.prioridad]) || (new Date(a.fecha) - new Date(b.fecha)));
-  const cols = ["Prioridad", "Sitio", "Sector", "Tipo", "Ubicación", "Estado", "Contacto", "Acción"];
+  const cols = ["Fecha", "Evento", "Tipo de emergencia", "Ubicación", "Estado", "Atendido por", "📷", "Acción"];
   el("tbl").querySelector("thead").innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
   const tb = el("tbl").querySelector("tbody");
-  if (!list.length) { tb.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty">🎉 No hay reportes pendientes. Todo atendido.</div></td></tr>`; }
+  const list = rows.slice().sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  if (!list.length) { tb.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty">Sin atenciones en campo registradas.</div></td></tr>`; }
   else tb.innerHTML = list.map(r => `<tr>
-    <td class="p-${r.prioridad.toLowerCase()}">${r.prioridad}</td>
+    <td>${fmtDate(r.fecha)}</td>
     <td>${sitioCell(r)}</td>
-    <td>${SECTOR_LABEL[r.sector] || r.sector}</td>
-    <td>${r.tipo}</td>
+    <td>${r.tipoEvento || r.tipo}</td>
     <td>${ubicCell(r)}</td>
     <td>${estadoCell(r)}</td>
-    <td>${contactoCell(r)}</td>
+    <td>${r.atendidoPor || "—"}</td>
+    <td>${fotoCell(r)}</td>
     <td><div class="wl-actions">
-      <button class="btn sm att" data-atender="${r.id}">Atender</button>
-      <button class="btn sm close" data-cerrar="${r.id}">Cerrar</button>
+      <button class="btn sm att" data-atender="${r.id}">Ver / Actualizar</button>
+      ${r.estado !== "Atendido" ? `<button class="btn sm close" data-cerrar="${r.id}">Cerrar</button>` : ""}
     </div></td></tr>`).join("");
   tb.querySelectorAll("[data-atender]").forEach(b => b.onclick = () => openModal(b.dataset.atender));
   tb.querySelectorAll("[data-cerrar]").forEach(b => b.onclick = () => closeReport(b.dataset.cerrar));
 
-  el("tblTitle").textContent = "Lista de atención · pendientes (" + list.length + ")";
-  el("mapTitle").textContent = "Mapa · reportes pendientes de atención";
+  el("tblTitle").textContent = "Atenciones en campo (" + list.length + ")";
+  el("mapTitle").textContent = "Mapa · atenciones en campo";
 }
 
 function closeReport(id) {
