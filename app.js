@@ -161,6 +161,12 @@ function buildGeoIndex() {
 function load() {
   try { DATA = JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
   catch (e) { DATA = []; }
+  // Modo NUBE: la fuente compartida es Firestore. Arrancamos con la carga
+  // inicial para que algo se vea, y la suscripción (boot) la refina en vivo.
+  if (window.CLOUD && CLOUD.enabled) {
+    DATA = (window.REPORTES_INICIALES || []).slice();
+    return;
+  }
   // Carga inicial (registro fotográfico de Escuelas). Se re-siembra cuando el
   // conjunto inicial cambia (REPORTES_BUILD distinto), salvo que ya existan
   // reportes ingresados manualmente (id que no empieza por "EDU"), para no perderlos.
@@ -620,11 +626,11 @@ function renderTable(rows) {
       ["Vereda / Barrio", ubicCell],
       ["Sector", r => r.sectorLocal || "—"],
       ["Tipo", r => r.tipo], ["Estado", estadoCell],
-      ["Prioridad", r => `<span class="p-${r.prioridad.toLowerCase()}">${r.prioridad}</span>`], ["📷", fotoCell]];
+      ["Prioridad", r => { const p = r.prioridad || "Media"; return `<span class="p-${p.toLowerCase()}">${p}</span>`; }], ["📷", fotoCell]];
   } else {
     cols = [["Fecha", r => fmtDate(r.fecha)], ["Sitio", sitioCell], ["Sector", r => SECTOR_LABEL[r.sector] || r.sector],
       ["Tipo", r => r.tipo], ["Ubicación", ubicCell], ["Estado", estadoCell],
-      ["Prioridad", r => `<span class="p-${r.prioridad.toLowerCase()}">${r.prioridad}</span>`], ["Personas", r => r.personas || 0], ["📷", fotoCell]];
+      ["Prioridad", r => { const p = r.prioridad || "Media"; return `<span class="p-${p.toLowerCase()}">${p}</span>`; }], ["Personas", r => r.personas || 0], ["📷", fotoCell]];
   }
   cols.push(["", r => `<span class="row-act" data-edit="${r.id}">✎</span> <span class="row-act" data-del="${r.id}">🗑</span>`]);
 
@@ -743,6 +749,8 @@ let NEEDS = [];
 // Sin datos precargados: los registros EDAN se ingresan manualmente.
 function NEEDS_SEED() { return []; }
 function loadNeeds() {
+  // Modo NUBE: los registros EDAN vienen de Firestore (suscripción en boot).
+  if (window.CLOUD && CLOUD.enabled) { NEEDS = []; return; }
   const raw = localStorage.getItem(STORE_NEC);
   if (raw === null) { NEEDS = NEEDS_SEED(); saveNeeds(); }
   else { try { NEEDS = JSON.parse(raw) || []; } catch (e) { NEEDS = []; } }
@@ -807,7 +815,7 @@ function renderNecesidades() {
   if (!rows.length) tb.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty">Sin registros EDAN. Usa “＋ Nuevo registro EDAN”.</div></td></tr>`;
   else tb.innerHTML = rows.map(n => "<tr>" + cols.map(c => `<td>${c[1](n)}</td>`).join("") + "</tr>").join("");
   tb.querySelectorAll("[data-editnec]").forEach(b => b.onclick = () => openNec(b.dataset.editnec));
-  tb.querySelectorAll("[data-delnec]").forEach(b => b.onclick = () => { if (confirm("¿Eliminar este registro EDAN?")) { NEEDS = NEEDS.filter(x => x.id !== b.dataset.delnec); saveNeeds(); render(); } });
+  tb.querySelectorAll("[data-delnec]").forEach(b => b.onclick = () => { if (confirm("¿Eliminar este registro EDAN?")) { const did = b.dataset.delnec; NEEDS = NEEDS.filter(x => x.id !== did); if (window.CLOUD && CLOUD.enabled) CLOUD.delEdan(did); saveNeeds(); render(); } });
 
   el("tblTitle").textContent = "Registro EDAN — Evaluación de Daños y Análisis de Necesidades (" + rows.length + ")";
 }
@@ -851,7 +859,9 @@ function saveNec(e) {
     telefono: el("nTelefono").value.trim(), obs: el("nObs").value.trim()
   };
   if (id) { const i = NEEDS.findIndex(x => x.id === id); NEEDS[i] = rec; } else { NEEDS.push(rec); }
-  saveNeeds(); closeNec(); render();
+  saveNeeds();
+  if (window.CLOUD && CLOUD.enabled) CLOUD.putEdan(rec);
+  closeNec(); render();
 }
 
 /* ============================================================
@@ -1045,7 +1055,9 @@ function saveForm(e) {
   if (rec.estado === "Atendido" && !rec.fechaAtencion) rec.fechaAtencion = new Date().toISOString();
   if (id) { const i = DATA.findIndex(x => x.id === id); DATA[i] = rec; }
   else { DATA.push(rec); }
-  save(); closeModal();
+  save();
+  if (window.CLOUD && CLOUD.enabled) CLOUD.putReporte(rec);
+  closeModal();
   // quedarse en Atención/Resumen; si no, ir a la pestaña del sector para ver el reporte
   if (currentTab === "atencion" || currentTab === "resumen" || rec.sector === currentTab) render();
   else setTab(rec.sector);
@@ -1061,7 +1073,9 @@ function closeFromModal() {
 }
 function delReport(id) {
   if (!confirm("¿Eliminar este reporte?")) return;
-  DATA = DATA.filter(x => x.id !== id); save(); render();
+  DATA = DATA.filter(x => x.id !== id);
+  if (window.CLOUD && CLOUD.enabled) CLOUD.delReporte(id);
+  save(); render();
 }
 
 /* ============================================================
@@ -1132,6 +1146,10 @@ function bindEvents() {
   el("form").onsubmit = saveForm;
   el("btnCSV").onclick = exportCSV;
   el("btnDemo").onclick = () => {
+    if (window.CLOUD && CLOUD.enabled) {
+      alert("En modo compartido (nube) no se puede borrar todo de golpe, para no afectar a los demás. Elimina los reportes uno por uno con el ícono 🗑.");
+      return;
+    }
     if (confirm("Esto borra TODOS los reportes almacenados en este dispositivo. ¿Continuar?")) {
       DATA = []; localStorage.removeItem(STORE_KEY); save(); render();
     }
@@ -1153,6 +1171,34 @@ function boot() {
   bindEvents();
   clearFilters();   // los filtros siempre arrancan limpios (evita que el navegador restaure uno viejo)
   render();
+  startCloudSync();
+}
+
+/* ---------- Nube: suscripciones en vivo (multiusuario) ---------- */
+function startCloudSync() {
+  if (!(window.CLOUD && CLOUD.enabled)) return;
+  setCloudBadge("Conectando…");
+  // Reportes: base = carga inicial, sobreescrita por lo que haya en la nube.
+  CLOUD.subReportes(function (cloudDocs) {
+    const map = {};
+    (window.REPORTES_INICIALES || []).forEach(r => { map[r.id] = r; });
+    cloudDocs.forEach(d => {
+      if (!d || d.id == null) return;
+      if (d.__deleted) delete map[d.id]; else map[d.id] = d;
+    });
+    DATA = Object.keys(map).map(k => map[k]);
+    setCloudBadge("En vivo");
+    render();
+  });
+  // EDAN (Necesidades): fuente 100% nube.
+  CLOUD.subEdan(function (docs) {
+    NEEDS = docs.filter(d => d && !d.__deleted);
+    render();
+  });
+}
+function setCloudBadge(txt) {
+  const s = el("storeInfo"); if (!s) return;
+  s.innerHTML = '· <span style="color:var(--lime);font-weight:700">☁ ' + txt + '</span> · datos compartidos';
 }
 function clearFilters() { ["fZona", "fUbic", "fEstado", "fPrioridad", "fBuscar"].forEach(id => { if (el(id)) el(id).value = ""; }); }
 document.addEventListener("DOMContentLoaded", boot);
