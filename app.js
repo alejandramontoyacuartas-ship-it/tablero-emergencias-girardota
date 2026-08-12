@@ -595,6 +595,40 @@ function renderMap(rows) {
   }
 }
 
+/* Mapa de la pestaña Necesidades: SOLO puntos de necesidades (EDAN),
+   nunca los puntos de atención. Si un registro no tiene coordenadas,
+   no se dibuja (mapa en blanco). */
+function renderNeedsMap(rows) {
+  if (!markerLayer) return;
+  markerLayer.clearLayers();
+  const seen = {};
+  for (const n of rows) {
+    let lat = n.lat, lon = n.lon;
+    if (lat == null || lon == null) continue; // sin coordenadas -> no se dibuja
+    const gkey = lat.toFixed(4) + "," + lon.toFixed(4);
+    const idx = seen[gkey] || 0; seen[gkey] = idx + 1;
+    if (idx > 0) { const ang = idx * 1.7, rad = 0.0003 * (1 + Math.floor(idx / 6)); lat += Math.sin(ang) * rad; lon += Math.cos(ang) * rad; }
+    const color = INMUEBLE_COLOR[n.estadoInmueble] || "#16b3b3";
+    const size = 15;
+    const icon = L.divIcon({ className: "heatpt", html: `<b style="--c:${color}"></b>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    const nec = EDAN_NEC.filter(x => n[x.k]).map(x => x.lab).join(", ") || "—";
+    const nombre = (`${n.nombres || ""} ${n.apellidos || ""}`).trim() || "Registro EDAN";
+    const mk = L.marker([lat, lon], { icon });
+    mk.bindPopup(
+      `<b>${nombre}</b><br>` +
+      (n.numDoc ? `<b>Doc.:</b> ${n.tipoDoc || ""} ${n.numDoc}<br>` : "") +
+      `<b>Ubicación:</b> ${n.ubic || "—"} (${n.zona || "—"})<br>` +
+      (n.sitio ? `${n.sitio}<br>` : "") +
+      `<b>Propiedad:</b> ${n.propiedad || "—"} · <b>Inmueble:</b> ${n.estadoInmueble || "—"}<br>` +
+      `<b>Necesidades:</b> ${nec}` +
+      (n.telefono ? `<br><b>Tel.:</b> ${n.telefono}` : "") +
+      (n.obs ? `<br><i>${n.obs}</i>` : "")
+    );
+    mk.bindTooltip(`<b>${nombre}</b><br>${n.estadoInmueble || ""}`, { direction: "top", offset: [0, -8], opacity: 0.95 });
+    markerLayer.addLayer(mk);
+  }
+}
+
 /* ============================================================
    TABLA
    ============================================================ */
@@ -800,8 +834,8 @@ function renderNecesidades() {
   const edad = {}; rows.forEach(n => { const g = edadGrupo(n.edad); edad[g] = (edad[g] || 0) + 1; });
   barV("nGedad", edad, { "0-5": "#8CC63F", "6-17": "#3aa0ff", "18-59": "#16b3b3", "60+": "#a06bff" });
 
-  renderMap(DATA); // muestra los puntos de reportes como contexto
-  el("mapTitle").textContent = "Mapa · reportes (contexto) — el registro EDAN se lista abajo";
+  renderNeedsMap(rows); // SOLO puntos de necesidades (EDAN); en blanco si no hay coordenadas
+  el("mapTitle").textContent = "Mapa · necesidades (EDAN) — solo puntos de necesidades";
 
   const necChips = n => { const c = EDAN_NEC.filter(x => n[x.k]).map(x => `<span class="badge b-atencion">${x.lab.replace("AHE ", "").replace("Mat. rehab. vivienda", "Mat.").replace("Subsidio de arriendo", "Arriendo")}</span>`); return c.length ? c.join(" ") : "—"; };
   const cols = [
@@ -840,6 +874,7 @@ function openNec(id) {
     set("nPropiedad", n.propiedad || "Propia"); set("nEstadoInmueble", n.estadoInmueble || "En evaluación");
     el("nAhAlim").checked = !!n.ahAlim; el("nAhNoAlim").checked = !!n.ahNoAlim;
     el("nMatRehab").checked = !!n.matRehab; el("nSubArriendo").checked = !!n.subArriendo;
+    set("nLat", n.lat != null ? n.lat : ""); set("nLon", n.lon != null ? n.lon : "");
     set("nTelefono", n.telefono || ""); set("nObs", n.obs || "");
   } else {
     el("necTitle").textContent = "Nuevo registro EDAN"; el("formNec").reset(); el("nId").value = "";
@@ -862,6 +897,9 @@ function saveNec(e) {
     matRehab: el("nMatRehab").checked, subArriendo: el("nSubArriendo").checked,
     telefono: el("nTelefono").value.trim(), obs: el("nObs").value.trim()
   };
+  const _c = readCoords(el("nLat").value, el("nLon").value); // normaliza a WGS84 [lat,lon]
+  rec.lat = _c.lat; rec.lon = _c.lon;
+  if (_c.warn) { if (!confirm("Las coordenadas caen fuera de Girardota. ¿Guardar de todos modos?")) return; }
   if (id) { const i = NEEDS.findIndex(x => x.id === id); NEEDS[i] = rec; } else { NEEDS.push(rec); }
   saveNeeds();
   if (window.CLOUD && CLOUD.enabled) CLOUD.putEdan(rec);
@@ -1091,10 +1129,10 @@ function exportCSV() {
     const rows = needsFiltered();
     const cols = ["fecha", "nombres", "apellidos", "tipoDoc", "numDoc", "parentesco", "genero", "edad", "etnia",
       "estadoSalud", "regimen", "zona", "ubic", "sitio", "propiedad", "estadoInmueble",
-      "ahAlim", "ahNoAlim", "matRehab", "subArriendo", "telefono", "obs"];
+      "ahAlim", "ahNoAlim", "matRehab", "subArriendo", "telefono", "lat", "lon", "obs"];
     const head = ["Fecha", "Nombres", "Apellidos", "Tipo doc", "Número doc", "Parentesco", "Género", "Edad", "Etnia",
       "Estado de salud", "Régimen de salud", "Zona", "Vereda/Barrio", "Dirección", "Propiedad inmueble", "Estado inmueble",
-      "AHE Alimentaria", "AHE No Alimentaria", "Mat. rehab. vivienda", "Subsidio arriendo", "Teléfono", "Observaciones"];
+      "AHE Alimentaria", "AHE No Alimentaria", "Mat. rehab. vivienda", "Subsidio arriendo", "Teléfono", "Latitud", "Longitud", "Observaciones"];
     const bk = { ahAlim: 1, ahNoAlim: 1, matRehab: 1, subArriendo: 1 };
     const csv = [head.join(",")].concat(rows.map(r => cols.map(c => esc(bk[c] ? (r[c] ? "SI" : "NO") : r[c])).join(","))).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });

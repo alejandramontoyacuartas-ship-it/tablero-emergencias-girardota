@@ -401,13 +401,17 @@
         <div class="fld"><label class="chk"><input type="checkbox" id="nMatRehab"> Materiales rehab. de vivienda</label></div>
         <div class="fld"><label class="chk"><input type="checkbox" id="nSubArriendo"> Subsidio de arriendo</label></div>
 
+        <div class="grp-head">Ubicación en el mapa (WGS84) — opcional</div>
+        <div class="fld"><label>Latitud (o pega el par)</label><input id="nLat" placeholder="6.375451, -75.446302" /></div>
+        <div class="fld"><label>Longitud</label><input id="nLon" placeholder="-75.446302" /></div>
+
         <div class="grp-head">Contacto y observaciones</div>
         <div class="fld"><label>Teléfono</label><input id="nTelefono" type="tel" /></div>
         <div class="fld full"><label>Observaciones</label><textarea id="nObs" placeholder="Observaciones EDAN…"></textarea></div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" id="btnNecCancel">Cancelar</button>
-        <button type="submit" class="btn">Guardar necesidad</button>
+        <button type="submit" class="btn">Guardar registro EDAN</button>
       </div>
     </form>
   </div>
@@ -418,9 +422,9 @@
 <!-- Firebase (nube compartida, en vivo). Si firebase-config.js no está configurado, el tablero funciona local. -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=32"></script>
-<script src="firebase-sync.js?v=32"></script>
-<script src="geodata.js?v=32"></script>
-<script src="geoportal.js?v=32"></script>
-<script src="reportes_iniciales.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="firebase-config.js?v=33"></script>
+<script src="firebase-sync.js?v=33"></script>
+<script src="geodata.js?v=33"></script>
+<script src="geoportal.js?v=33"></script>
+<script src="reportes_iniciales.js?v=33"></script>
+<script src="app.js?v=33"></script>
