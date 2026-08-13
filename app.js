@@ -788,13 +788,21 @@ const STORE_NEC = "girardota_necesidades_v3";
 let NEEDS = [];
 
 // Sin datos precargados: los registros EDAN se ingresan manualmente.
-function NEEDS_SEED() { return []; }
+function NEEDS_SEED() { return (window.NECESIDADES_INICIALES || []).slice(); }
 function loadNeeds() {
   // Modo NUBE: los registros EDAN vienen de Firestore (suscripción en boot).
   if (window.CLOUD && CLOUD.enabled) { NEEDS = []; return; }
-  const raw = localStorage.getItem(STORE_NEC);
-  if (raw === null) { NEEDS = NEEDS_SEED(); saveNeeds(); }
-  else { try { NEEDS = JSON.parse(raw) || []; } catch (e) { NEEDS = []; } }
+  try { NEEDS = JSON.parse(localStorage.getItem(STORE_NEC)) || []; } catch (e) { NEEDS = []; }
+  // Carga inicial EDAN: se re-siembra cuando cambia el build, salvo que ya
+  // existan registros ingresados manualmente (id que no empieza por "EDAN").
+  const savedB = localStorage.getItem(STORE_NEC + "_build");
+  const curB = window.REPORTES_BUILD || "";
+  const hasManual = NEEDS.some(n => !/^EDAN\d+$/.test(n.id || ""));
+  if (window.NECESIDADES_INICIALES && (!NEEDS.length || (savedB !== curB && !hasManual))) {
+    NEEDS = NEEDS_SEED();
+    localStorage.setItem(STORE_NEC + "_build", curB);
+    saveNeeds();
+  }
 }
 function saveNeeds() { try { localStorage.setItem(STORE_NEC, JSON.stringify(NEEDS)); } catch (e) {} }
 
