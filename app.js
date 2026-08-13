@@ -779,7 +779,7 @@ const EDAN_NEC = [
   { k: "subArriendo", lab: "Subsidio de arriendo" }
 ];
 const INMUEBLE_COLOR = {
-  "Habitable": "#35c46b", "Uso restringido": "#f5a623", "No habitable": "#ff8a3a",
+  "Habitable": "#35c46b", "Uso restringido": "#f5a623", "No habitable": "#e5484d",
   "Colapsado": "#e5484d", "En evaluación": "#3aa0ff"
 };
 const PROP_COLOR = { "Propia": "#35c46b", "Arriendo": "#f5a623", "Familiar": "#3aa0ff", "Otro": "#a06bff" };
