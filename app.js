@@ -262,9 +262,9 @@ function renderKPIs(rows) {
     { cls: "total", ic: "⚠️", num: n, lab: "Total reportado", est: "" },
     { cls: "rep", ic: "📍", num: pend, lab: "Para atención", est: "Reportado" },
     { cls: "aten", ic: "🛠️", num: aten, lab: "En atención", est: "En atención" },
-    { cls: "insp", ic: "🔎", num: insp, lab: "Con afectaciones", est: "Inspeccionado" },
+    { cls: "insp", ic: "🔎", num: insp, lab: "Con afectaciones (atendidas)", est: "Inspeccionado" },
     { cls: "crit", ic: "🔴", num: rows.filter(r => r.estado === "Crítico").length, lab: "Crítico", est: "Crítico" },
-    { cls: "hecho", ic: "✅", num: hecho, lab: "Atendido", est: "Atendido" }
+    { cls: "hecho", ic: "✅", num: hecho + insp, lab: "Atendidas (total)", est: "" }
   ];
 
   const noOper = rows.filter(r => r.operativa === "No operativa").length;
@@ -276,15 +276,15 @@ function renderKPIs(rows) {
       { cls: "insp", ic: "🏫", num: sedes, lab: "Sedes involucradas" },
       { cls: "rep", ic: "🚫", num: noOper, lab: "Sedes no operativas" },
       { cls: "rep", ic: "🎒", num: est, lab: "Estudiantes afectados" },
-      { cls: "hecho", ic: "✅", num: hecho, lab: "Atendidas" }
+      { cls: "hecho", ic: "✅", num: hecho + insp, lab: "Atendidas" }
     ];
   } else if (currentTab === "infraestructura") {
     cards = [
       { cls: "rep", ic: "🏛️", num: n, lab: "Reportes infraestr." },
       { cls: "rep", ic: "🚫", num: noOper, lab: "No operativas" },
       { cls: "rep", ic: "🔴", num: alta, lab: "Prioridad alta" },
-      { cls: "aten", ic: "🛠️", num: aten + insp, lab: "En atención / inspec." },
-      { cls: "hecho", ic: "✅", num: hecho, lab: "Atendidas" }
+      { cls: "aten", ic: "🛠️", num: aten, lab: "En atención" },
+      { cls: "hecho", ic: "✅", num: hecho + insp, lab: "Atendidas" }
     ];
   } else if (currentTab === "afectaciones") {
     const vivA = rows.reduce((s, r) => s + (+r.vivAfect || 0), 0);
