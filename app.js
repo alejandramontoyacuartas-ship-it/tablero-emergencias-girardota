@@ -430,8 +430,8 @@ function initMap() {
   map = L.map("map", { zoomControl: true }).setView([6.379, -75.445], 12);
 
   // ---- Capas base seleccionables ----
-  const mapaBase = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    attribution: "&copy; OpenStreetMap, &copy; CARTO", maxZoom: 20
+  const mapaBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "Mosaicos &copy; Esri &mdash; Esri, DeLorme, HERE", maxZoom: 20, maxNativeZoom: 16
   });
   const satelital = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     attribution: "Imágenes &copy; Esri, Maxar, Earthstar Geographics", maxZoom: 20
@@ -439,8 +439,8 @@ function initMap() {
   const terreno = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenTopoMap (CC-BY-SA)", maxZoom: 17
   });
-  const mapaClaro = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    attribution: "&copy; OpenStreetMap, &copy; CARTO", maxZoom: 20
+  const mapaClaro = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "Mosaicos &copy; Esri &mdash; Esri, DeLorme, HERE", maxZoom: 20, maxNativeZoom: 16
   });
   mapaBase.addTo(map);
   baseLayers = { "🗺️ Mapa base": mapaBase, "🛰️ Satelital": satelital, "⛰️ Terreno": terreno, "☀️ Mapa claro": mapaClaro };
