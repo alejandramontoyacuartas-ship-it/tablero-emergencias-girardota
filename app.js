@@ -669,7 +669,7 @@ function renderTable(rows) {
       ["Tipo", r => r.tipo], ["Estado", estadoCell],
       ["Prioridad", r => { const p = r.prioridad || "Media"; return `<span class="p-${p.toLowerCase()}">${p}</span>`; }], ["📷", fotoCell]];
   } else {
-    cols = [["Fecha", r => fmtDate(r.fecha)], ["Sitio", sitioCell], ["Sector", r => SECTOR_LABEL[r.sector] || r.sector],
+    cols = [["Fecha", r => fmtDate(r.fecha)], ["Sitio", sitioCell], ["Peticionario", contactoCell], ["Sector", r => SECTOR_LABEL[r.sector] || r.sector],
       ["Tipo", r => r.tipo], ["Ubicación", ubicCell], ["Estado", estadoCell],
       ["Prioridad", r => { const p = r.prioridad || "Media"; return `<span class="p-${p.toLowerCase()}">${p}</span>`; }], ["Personas", r => r.personas || 0], ["📷", fotoCell]];
   }
