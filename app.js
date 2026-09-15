@@ -172,7 +172,7 @@ function load() {
   // reportes ingresados manualmente (id que no empieza por "EDU"), para no perderlos.
   const savedBuild = localStorage.getItem(STORE_KEY + "_build");
   const curBuild = window.REPORTES_BUILD || "";
-  const hasManual = DATA.some(r => !/^(EDU|INF|AFEC)\d+$/.test(r.id || ""));
+  const hasManual = DATA.some(r => !/^(EDU|INF|AFEC|MARK)\d+$/.test(r.id || ""));
   if (window.REPORTES_INICIALES && (!DATA.length || (savedBuild !== curBuild && !hasManual))) {
     DATA = window.REPORTES_INICIALES.slice();
     localStorage.setItem(STORE_KEY + "_build", curBuild);
