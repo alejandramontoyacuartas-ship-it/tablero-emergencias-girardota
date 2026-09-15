@@ -557,7 +557,9 @@ function renderMap(rows) {
   if (!markerLayer) return;
   markerLayer.clearLayers();
   const seen = {};
-  for (const r of rows) {
+  // Marcadores especiales con color propio (p. ej. puntos fucsia): visibles en TODAS las pestañas
+  const extraMarks = (DATA || []).filter(d => d.color && d.lat != null && d.lon != null && rows.indexOf(d) === -1);
+  for (const r of rows.concat(extraMarks)) {
     let lat = r.lat, lon = r.lon;
     if (lat == null || lon == null) continue; // sin coordenadas exactas -> no se dibuja en el mapa
     // Separar puntos que caen casi en el mismo lugar (evita que se monten unos sobre otros)
