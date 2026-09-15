@@ -567,9 +567,9 @@ function renderMap(rows) {
     const idx = seen[gkey] || 0; seen[gkey] = idx + 1;
     if (idx > 0) { const ang = idx * 1.7, rad = 0.0003 * (1 + Math.floor(idx / 6)); lat += Math.sin(ang) * rad; lon += Math.cos(ang) * rad; }
     const color = r.color || ESTADO_COLOR[r.estado] || "#16b3b3";
-    const size = 15; // todos los puntos calientes del mismo tamaño (pequeños, evitan encimarse)
+    const size = r.color ? 30 : 15; // marcadores especiales (fucsia) más grandes para que resalten
     const icon = L.divIcon({
-      className: "heatpt",
+      className: r.color ? "heatpt markpt" : "heatpt",
       html: `<b style="--c:${color}"></b>`,
       iconSize: [size, size], iconAnchor: [size / 2, size / 2]
     });
