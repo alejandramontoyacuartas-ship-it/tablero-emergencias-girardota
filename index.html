@@ -41,6 +41,22 @@
   .tab{background:transparent;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:11px 16px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
   .tab:hover{color:var(--text)}
   .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+  .emerg-nav{display:flex;gap:8px;padding:9px 12px;background:var(--panel2);border-bottom:1px solid var(--border);overflow-x:auto}
+  .emerg{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:8px 14px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap}
+  .emerg:hover{color:var(--text)}
+  .emerg.active{color:#04222b;background:var(--accent);border-color:var(--accent)}
+  .emerg.fire.active{color:#fff;background:#d9480f;border-color:#d9480f}
+  .fire-panel{max-width:1100px;margin:16px auto;padding:0 16px}
+  .fire-hero{position:relative;display:block;border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--border);text-decoration:none}
+  .fire-hero img{width:100%;display:block}
+  .fire-hero .ov{position:absolute;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(transparent,rgba(0,0,0,.82));color:#fff;font-size:13px;line-height:1.45}
+  .fire-hero .ov b{font-size:17px}
+  .fire-hero .badge{position:absolute;top:12px;left:12px;background:#d9480f;color:#fff;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700}
+  .fire-hero .dl{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700}
+  .fire-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px}
+  .fire-kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+  .fire-kpi .n{font-size:21px;font-weight:800;color:#f08c3c}
+  .fire-kpi .l{font-size:11px;color:var(--muted);margin-top:3px}
 
   main{padding:12px}
 
@@ -156,8 +172,8 @@
   <div class="brand">
     <img class="logo" src="logo_girardota_blanco.png" alt="Alcaldía de Girardota" />
     <h1><span class="cm">Consejo Municipal de Gestión del Riesgo de Desastres · Girardota</span>
-      Tablero de manejo de emergencia sísmica
-      <small>Sismo del 10 de agosto de 2026 · Datos operativos</small></h1>
+      Tablero de manejo de emergencias
+      <small id="emergSub">Sismo del 10 de agosto de 2026 · Datos operativos</small></h1>
   </div>
   <div class="filters" autocomplete="off">
     <div class="f"><label>Zona</label>
@@ -175,6 +191,11 @@
     <button class="btn" id="btnNuevo">＋ Nuevo reporte</button>
   </div>
 </header>
+
+<nav class="emerg-nav" id="emergNav">
+  <button class="emerg active" data-emerg="sismo">🟤 Sismo · 10 de agosto de 2026</button>
+  <button class="emerg fire" data-emerg="incendio">🔥 Incendio Industrial–Estructural</button>
+</nav>
 
 <nav class="tabs" id="tabs">
   <button class="tab active" data-tab="resumen">📊 Resumen general</button>
@@ -224,6 +245,38 @@
     <span id="storeInfo"></span>
   </div>
 </main>
+
+<section class="fire-panel" id="emergIncendio" style="display:none">
+  <a class="fire-hero" href="informes/Informe_Incendio_Dina_J.pdf" target="_blank" rel="noopener" title="Clic para ver y descargar el informe ejecutivo (PDF)">
+    <span class="badge">🔥 Incendio Industrial–Estructural</span>
+    <span class="dl">📄 Ver / descargar informe (PDF)</span>
+    <img src="incendio_dina_j.jpg" alt="Incendio en Materiales Dina J. S.A.S. — San Diego, Cabildo" />
+    <div class="ov"><b>Materiales Dina J. S.A.S. — Vereda San Diego, sector Cabildo</b><br>
+      Lunes 24 de agosto de 2026 · Incendio estructural y de cobertura vegetal con participación de materiales peligrosos (pinturas y solventes).<br>
+      <small>👆 Clic en la imagen para ver y descargar el informe ejecutivo (PDF).</small></div>
+  </a>
+  <div class="fire-kpis">
+    <div class="fire-kpi"><div class="n">17 min</div><div class="l">del reporte a la llegada</div></div>
+    <div class="fire-kpi"><div class="n">8</div><div class="l">cuerpos de bomberos</div></div>
+    <div class="fire-kpi"><div class="n">29</div><div class="l">personas evacuadas</div></div>
+    <div class="fire-kpi"><div class="n">0</div><div class="l">personas lesionadas</div></div>
+    <div class="fire-kpi"><div class="n">2.000 m</div><div class="l">perímetro de seguridad</div></div>
+    <div class="fire-kpi"><div class="n">5 h 57 min</div><div class="l">hasta el confinamiento</div></div>
+    <div class="fire-kpi"><div class="n">33</div><div class="l">caninos rescatados</div></div>
+    <div class="fire-kpi"><div class="n">29</div><div class="l">árboles afectados</div></div>
+  </div>
+  <p style="color:var(--muted);font-size:13px;margin-top:14px;line-height:1.55;max-width:900px">
+    El 24 de agosto de 2026 se presentó un incendio estructural y de cobertura vegetal con participación de materiales peligrosos
+    (xileno UN&nbsp;1307 y pinturas inflamables UN&nbsp;1263) en el establecimiento Materiales Dina&nbsp;J. S.A.S., ubicado en suelo rural donde el
+    uso industrial está prohibido. La emergencia superó la capacidad de respuesta local inicial y requirió apoyo intermunicipal e
+    interinstitucional; el foco principal quedó confinado la misma noche, sin personas lesionadas. Persisten escenarios de riesgo por
+    sustancias remanentes y contaminación del suelo, gestionados mediante requerimientos a la empresa y seguimiento interinstitucional.
+  </p>
+  <div class="footer-note" style="margin-top:16px">
+    <b>Alcaldía de Girardota</b> · CMGRD · Secretaría de Infraestructura — Área de Gestión del Riesgo de Desastres ·
+    Informe ejecutivo con corte al 21 de septiembre de 2026.
+  </div>
+</section>
 
 <!-- Modal nuevo/editar reporte -->
 <div class="modal-bg" id="modalBg">
@@ -424,9 +477,27 @@
 <!-- Firebase (nube compartida, en vivo). Si firebase-config.js no está configurado, el tablero funciona local. -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=209"></script>
-<script src="firebase-sync.js?v=209"></script>
-<script src="geodata.js?v=209"></script>
-<script src="geoportal.js?v=209"></script>
-<script src="reportes_iniciales.js?v=209"></script>
-<script src="app.js?v=209"></script>
+<script src="firebase-config.js?v=210"></script>
+<script src="firebase-sync.js?v=210"></script>
+<script src="geodata.js?v=210"></script>
+<script src="geoportal.js?v=210"></script>
+<script src="reportes_iniciales.js?v=210"></script>
+<script src="app.js?v=210"></script>
+<script>
+(function(){
+  var btns=document.querySelectorAll('.emerg');
+  var sismo=[document.querySelector('.filters'),document.getElementById('tabs'),document.querySelector('main')];
+  var fire=document.getElementById('emergIncendio');
+  var sub=document.getElementById('emergSub');
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    btns.forEach(function(x){x.classList.remove('active')});b.classList.add('active');
+    var isFire=b.getAttribute('data-emerg')==='incendio';
+    sismo.forEach(function(e){if(e)e.style.display=isFire?'none':'';});
+    if(fire)fire.style.display=isFire?'block':'none';
+    if(sub)sub.textContent=isFire
+      ?'Incendio industrial–estructural · Materiales Dina J. S.A.S. · 24 de agosto de 2026'
+      :'Sismo del 10 de agosto de 2026 · Datos operativos';
+    window.scrollTo(0,0);
+  });});
+})();
+</script>
